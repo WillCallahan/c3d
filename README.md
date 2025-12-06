@@ -1,53 +1,47 @@
-# STEP to STL Converter
+# c3d: 3D File Conversion Utility
 
-This project provides a command-line tool to convert STEP files to STL files.
+`c3d` is a command-line tool for converting 3D files from one format to another.
 
-## Prerequisites
+## Installation
 
-- Python 3
-- pip
+### From PyPI
 
-## Setup
+```bash
+pip install c3d
+```
 
-1. **Create a virtual environment (recommended):**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+### From source
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/c3d.git
+    cd c3d
+    ```
+
+2.  **Install in editable mode:**
+    ```bash
+    pip install -e .
+    ```
 
 ## Usage
 
-Make the script executable:
 ```bash
-chmod +x step_to_stl.py
-```
-
-Run the script from the command line, providing the input STEP file and the desired output STL file path.
-
-```bash
-./step_to_stl.py [INPUT_STEP_FILE] [OUTPUT_STL_FILE]
+c3d <input_file> <output_file> [options]
 ```
 
 ### Example
 
 ```bash
-./step_to_stl.py my_model.step my_model.stl
+c3d my_model.step my_model.stl
 ```
 
 ### Options
 
-You can also adjust the meshing parameters for the STL export:
-
-- `--lin_deflection`: Linear deflection for meshing (tolerance). Default is `0.001`.
-- `--ang_deflection`: Angular deflection for meshing. Default is `0.1`.
+-   `--lin_deflection`: Linear deflection for meshing (tolerance). Default is `0.001`.
+-   `--ang_deflection`: Angular deflection for meshing. Default is `0.1`.
 
 #### Example with options
 
 ```bash
-./step_to_stl.py my_model.step my_model.stl --lin_deflection 0.01 --ang_deflection 0.2
+c3d my_model.step my_model.stl --lin_deflection 0.01 --ang_deflection 0.2
 ```
