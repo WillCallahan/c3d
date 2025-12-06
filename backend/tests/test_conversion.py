@@ -1,16 +1,18 @@
 import os
 import pytest
-from c3d.main import convert
+import tempfile
+import shutil
+from backend.c3d.main import convert, main
 
 
 @pytest.mark.parametrize(
     "input_file, output_ext",
     [
-        ("tests/test_assets/sample.step", ".stl"),
-        ("tests/test_assets/sample.obj", ".stl"),
-        ("tests/test_assets/sample.3mf", ".stl"),
-        ("tests/test_assets/sample.step", ".obj"),
-        ("tests/test_assets/sample.step", ".3mf"),
+        ("backend/tests/test_assets/sample.step", ".stl"),
+        ("backend/tests/test_assets/sample.obj", ".stl"),
+        ("backend/tests/test_assets/sample.3mf", ".stl"),
+        ("backend/tests/test_assets/sample.step", ".obj"),
+        ("backend/tests/test_assets/sample.step", ".3mf"),
     ],
 )
 def test_conversion(input_file, output_ext):
@@ -26,10 +28,13 @@ def test_conversion(input_file, output_ext):
 
 def test_unsupported_input_format():
     """Test with an unsupported input file format."""
-    with pytest.raises(SystemExit) as e:
-        convert("test.txt", "output.stl")
-    assert e.type is SystemExit
-    assert e.value.code == 1
+    with open("dummy.txt", "w") as f:
+        f.write("dummy")
+
+    with pytest.raises(ValueError):
+        convert("dummy.txt", "output.stl")
+
+    os.remove("dummy.txt")
 
 
 def test_unsupported_output_format():
@@ -38,17 +43,34 @@ def test_unsupported_output_format():
     with open("dummy.step", "w") as f:
         f.write("dummy")
 
-    with pytest.raises(SystemExit) as e:
+    with pytest.raises(ValueError):
         convert("dummy.step", "output.unsupported")
 
     os.remove("dummy.step")
-    assert e.type is SystemExit
-    assert e.value.code == 1
 
 
 def test_non_existent_input_file():
     """Test with a non-existent input file."""
-    with pytest.raises(SystemExit) as e:
+    with pytest.raises(FileNotFoundError):
         convert("non_existent_file.step", "output.stl")
-    assert e.type is SystemExit
-    assert e.value.code == 1
+
+def test_conversion_with_glob(monkeypatch):
+    """Test file conversion with glob patterns."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create dummy input files
+        input_dir = os.path.join(tmpdir, "input")
+        os.makedirs(input_dir)
+        for i in range(3):
+            shutil.copy("backend/tests/test_assets/sample.step", os.path.join(input_dir, f"test{i}.step"))
+
+        # Create output directory
+        output_dir = os.path.join(tmpdir, "output")
+        os.makedirs(output_dir)
+
+        # Call main with glob pattern
+        monkeypatch.setattr("sys.argv", ["c3d", os.path.join(input_dir, "*.step"), output_dir])
+        main()
+
+        # Check that the output files were created
+        for i in range(3):
+            assert os.path.exists(os.path.join(output_dir, f"test{i}.stl"))
