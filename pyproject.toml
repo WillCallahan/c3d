@@ -39,4 +39,5 @@ dev = [
     "ruff",
     "mypy",
     "pre-commit",
+    "pyinstaller",
 ]
