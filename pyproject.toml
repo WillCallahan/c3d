@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "step-to-stl"
+version = "0.1.0"
+description = "A 3D file conversion tool."
+authors = ["The c3d project authors <c3d@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "backend"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+cadquery = "^2.4.0"
+trimesh = "^4.4.1"
+networkx = "^3.3"
+lxml = "^5.2.2"
+cqkit = "^0.5.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-cov = "*"
+ruff = "*"
+mypy = "*"
+pre-commit = "*"
+pyinstaller = "*"
+
+[tool.poetry.scripts]
+c3d = "backend.c3d.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
