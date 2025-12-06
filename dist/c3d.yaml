@@ -1,0 +1,10 @@
+PackageIdentifier: WillCallahan.c3d
+PackageVersion: 0.1.0
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.0.0
+InstallerType: msi
+Installers:
+  - Architecture: x64
+    InstallerUrl: "https://github.com/WillCallahan/c3d/releases/download/v0.1.0/c3d-windows-latest.msi"
+    InstallerSha256: "..."
