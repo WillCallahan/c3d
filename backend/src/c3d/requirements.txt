@@ -1,0 +1,6 @@
+cadquery
+trimesh
+networkx
+lxml
+boto3
+python-magic

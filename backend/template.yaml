@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  c3d
+
+  Sample SAM Template for c3d
+
+Globals:
+  Function:
+    Timeout: 60
+
+Resources:
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: c3d-uploads-bucket
+  
+  ConversionsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: c3d-conversions-bucket
+
+  ConversionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          CONVERSIONS_BUCKET: !Ref ConversionsBucket
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref UploadsBucket
+            Events: s3:ObjectCreated:*
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref UploadsBucket
+        - S3WritePolicy:
+            BucketName: !Ref ConversionsBucket
+    Metadata:
+      DockerTag: python3.9-v1
+      DockerContext: ./src/c3d
+      Dockerfile: Dockerfile
+
+Outputs:
+  UploadsBucket:
+    Description: "S3 bucket for file uploads"
+    Value: !Ref UploadsBucket
+  ConversionsBucket:
+    Description: "S3 bucket for converted files"
+    Value: !Ref ConversionsBucket
+  ConversionFunction:
+    Description: "Conversion Lambda Function ARN"
+    Value: !GetAtt ConversionFunction.Arn
+  ConversionFunctionIamRole:
+    Description: "Implicit IAM Role created for Conversion function"
+    Value: !GetAtt ConversionFunctionRole.Arn
