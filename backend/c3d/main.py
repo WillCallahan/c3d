@@ -1,5 +1,6 @@
 import argparse
 import os
+import glob
 from typing import Callable
 import cadquery as cq
 import trimesh
@@ -85,22 +86,48 @@ def convert(input_file: str, output_file: str, linear_deflection: float = 0.001,
 
 
 def main():
+    """
+    The main entry point for the CLI.
+    """
     parser = argparse.ArgumentParser(description="c3d: A 3D file conversion tool.")
-    parser.add_argument("input", help="Path to the input file.")
-    parser.add_argument("output", help="Path to the output file.")
+    parser.add_argument("input", nargs='+', help="Path to the input file(s). Glob patterns are supported.")
+    parser.add_argument("output", help="Path to the output file or directory.")
     parser.add_argument("--lin_deflection", type=float, default=0.001, help="Linear deflection for meshing (tolerance).")
     parser.add_argument("--ang_deflection", type=float, default=0.1, help="Angular deflection for meshing.")
 
     args = parser.parse_args()
 
-    try:
-        convert(args.input, args.output, args.lin_deflection, args.ang_deflection)
-    except (FileNotFoundError, ValueError) as e:
-        print(f"Error: {e}")
-        # Using sys.exit here as this is the CLI entrypoint
+    # Expand glob patterns
+    input_files = []
+    for pattern in args.input:
+        input_files.extend(glob.glob(pattern))
+
+    if not input_files:
+        print("Error: No input files found.")
         import sys
         sys.exit(1)
 
+    output_is_dir = os.path.isdir(args.output) or (not os.path.exists(args.output) and get_file_extension(args.output) == '')
+
+    if output_is_dir:
+        os.makedirs(args.output, exist_ok=True)
+
+    if len(input_files) > 1 and not output_is_dir:
+        print("Error: When converting multiple files, the output must be a directory.")
+        import sys
+        sys.exit(1)
+
+    for input_file in input_files:
+        if output_is_dir:
+            base, _ = os.path.splitext(os.path.basename(input_file))
+            output_file = os.path.join(args.output, f"{base}.stl")
+        else:
+            output_file = args.output
+
+        try:
+            convert(input_file, output_file, args.lin_deflection, args.ang_deflection)
+        except (FileNotFoundError, ValueError) as e:
+            print(f"Error converting {input_file}: {e}")
 
 if __name__ == "__main__":
     main()

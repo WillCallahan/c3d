@@ -1,6 +1,6 @@
-# c3d: 3D File Conversion Utility
+# step-to-stl: 3D File Conversion Utility
 
-`c3d` is a command-line tool for converting 3D files from one format to another.
+`step-to-stl` is a command-line tool for converting 3D files from one format to another.
 
 ## Project Requirements
 
@@ -14,27 +14,27 @@ The detailed requirements for this project are split into two phases:
 ### From PyPI
 
 ```bash
-pip install c3d
+pip install step-to-stl
 ```
 
 ### From Homebrew (macOS)
 
 ```bash
-brew install <YOUR-USERNAME>/c3d/c3d
+brew install <YOUR-USERNAME>/step-to-stl/step-to-stl
 ```
 
 ### From Winget (Windows)
 
 ```bash
-winget install YourName.c3d
+winget install YourName.step-to-stl
 ```
 
 ### From source
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/<YOUR-USERNAME>/c3d.git
-    cd c3d
+    git clone https://github.com/<YOUR-USERNAME>/step-to-stl.git
+    cd step-to-stl
     ```
 
 2.  **Install in editable mode:**
@@ -45,13 +45,19 @@ winget install YourName.c3d
 ## Usage
 
 ```bash
-c3d <input_file> <output_file> [options]
+c3d <input_file(s)> <output_directory> [options]
 ```
 
 ### Example
 
+Convert a single file:
 ```bash
 c3d my_model.step my_model.stl
+```
+
+Convert multiple files using a glob pattern:
+```bash
+c3d "models/*.step" output_directory/
 ```
 
 ### Options
