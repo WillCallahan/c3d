@@ -1,22 +1,16 @@
 import os
 import pytest
 from c3d.main import convert
-import cadquery as cq
 
-@pytest.fixture
-def step_file():
-    """Creates a temporary STEP file for testing."""
-    file_path = "test.step"
-    cq.exporters.export(cq.Workplane("XY").box(1, 2, 3), file_path, exportType="STEP")
-    yield file_path
-    os.remove(file_path)
-
-@pytest.mark.parametrize("input_file_fixture, output_ext", [
-    ("step_file", ".stl"),
+@pytest.mark.parametrize("input_file, output_ext", [
+    ("tests/test_assets/sample.step", ".stl"),
+    ("tests/test_assets/sample.obj", ".stl"),
+    ("tests/test_assets/sample.3mf", ".stl"),
+    ("tests/test_assets/sample.step", ".obj"),
+    ("tests/test_assets/sample.step", ".3mf"),
 ])
-def test_conversion(input_file_fixture, output_ext, request):
+def test_conversion(input_file, output_ext):
     """Test file conversion for different formats."""
-    input_file = request.getfixturevalue(input_file_fixture)
     output_file = f"test_output{output_ext}"
     
     convert(input_file, output_file)
@@ -32,10 +26,16 @@ def test_unsupported_input_format():
     assert e.type == SystemExit
     assert e.value.code == 1
 
-def test_unsupported_output_format(step_file):
+def test_unsupported_output_format():
     """Test with an unsupported output file format."""
+    # Create a dummy file to pass the existence check
+    with open("dummy.step", "w") as f:
+        f.write("dummy")
+    
     with pytest.raises(SystemExit) as e:
-        convert(step_file, "output.txt")
+        convert("dummy.step", "output.unsupported")
+        
+    os.remove("dummy.step")
     assert e.type == SystemExit
     assert e.value.code == 1
 

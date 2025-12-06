@@ -23,6 +23,9 @@ classifiers = [
 ]
 dependencies = [
     "cadquery",
+    "trimesh",
+    "networkx",
+    "lxml",
 ]
 
 [project.scripts]
