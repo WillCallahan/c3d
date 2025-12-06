@@ -3,20 +3,19 @@ import os
 import sys
 from typing import Callable
 import cadquery as cq
-from cqkit import import_iges_file
 
 # A dictionary mapping file extensions to their importer functions
 IMPORTERS: dict[str, Callable] = {
     ".step": cq.importers.importStep,
     ".stp": cq.importers.importStep,
-    ".iges": import_iges_file,
-    ".igs": import_iges_file,
 }
 
 # A dictionary mapping file extensions to their exporter functions
-EXPORTERS: dict[str, Callable] = {
-    ".stl": cq.exporters.export,
-    # Add other exporters here as they are implemented
+# The value is the 'exportType' parameter for cq.exporters.export
+EXPORTERS: dict[str, str] = {
+    ".stl": "STL",
+    ".step": "STEP",
+    ".stp": "STEP",
 }
 
 
@@ -47,8 +46,8 @@ def convert(input_file: str, output_file: str, linear_deflection: float = 0.001,
         print(f"Supported formats are: {list(IMPORTERS.keys())}")
         sys.exit(1)
 
-    exporter = EXPORTERS.get(output_ext)
-    if not exporter:
+    export_format = EXPORTERS.get(output_ext)
+    if not export_format:
         print(f"Error: Unsupported output file format: {output_ext}")
         print(f"Supported formats are: {list(EXPORTERS.keys())}")
         sys.exit(1)
@@ -67,12 +66,7 @@ def convert(input_file: str, output_file: str, linear_deflection: float = 0.001,
 
     # Export the shape
     try:
-        # The exporter API is not consistent, some exporters need more arguments
-        if output_ext == ".stl":
-            exporter(shape, output_file, tolerance=linear_deflection, angularTolerance=angular_deflection)
-        else:
-            exporter(shape, output_file)
-
+        cq.exporters.export(shape, output_file, exportType=export_format, tolerance=linear_deflection, angularTolerance=angular_deflection)
     except Exception as e:
         print(f"Error: Could not write output file: {output_file}")
         print(e)

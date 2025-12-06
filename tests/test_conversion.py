@@ -7,21 +7,12 @@ import cadquery as cq
 def step_file():
     """Creates a temporary STEP file for testing."""
     file_path = "test.step"
-    cq.exporters.export(cq.Workplane("XY").box(1, 2, 3), file_path)
-    yield file_path
-    os.remove(file_path)
-
-@pytest.fixture
-def iges_file():
-    """Creates a temporary IGES file for testing."""
-    file_path = "test.iges"
-    cq.exporters.export(cq.Workplane("XY").box(1, 2, 3), file_path)
+    cq.exporters.export(cq.Workplane("XY").box(1, 2, 3), file_path, exportType="STEP")
     yield file_path
     os.remove(file_path)
 
 @pytest.mark.parametrize("input_file_fixture, output_ext", [
     ("step_file", ".stl"),
-    ("iges_file", ".stl"),
 ])
 def test_conversion(input_file_fixture, output_ext, request):
     """Test file conversion for different formats."""
