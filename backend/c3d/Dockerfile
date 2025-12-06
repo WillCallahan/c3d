@@ -1,10 +1,10 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM python:3.9
 
-# Copy function code
-COPY . ${LAMBDA_TASK_ROOT}
-
-# Install packages
+COPY requirements.txt .
 RUN pip install -r requirements.txt
+RUN pip install boto3
 
-# Set the CMD to your handler
-CMD [ "app.lambda_handler" ]
+COPY main.py .
+COPY app.py .
+
+CMD ["python", "main.py"]

@@ -1,52 +1,84 @@
-import json
 import boto3
 import os
-from c3d.main import convert
+import json
 
-s3 = boto3.client("s3")
-
-
-def lambda_handler(event, context):
+def handler(event, context):
     """
-    Lambda function to handle file conversions from S3 events.
+    This function handles the API Gateway requests.
     """
-    # Get the bucket and object key from the event
-    bucket = event["Records"][0]["s3"]["bucket"]["name"]
-    key = event["Records"][0]["s3"]["object"]["key"]
+    route_key = event.get("routeKey")
+    if route_key == "POST /upload-url":
+        return get_upload_url(event)
+    elif route_key == "POST /convert":
+        return convert_file(event)
+    elif route_key == "GET /status/{job_id}":
+        return get_status(event)
+    elif route_key == "GET /download-url/{job_id}":
+        return get_download_url(event)
+    else:
+        return {
+            "statusCode": 404,
+            "body": json.dumps({"message": "Not Found"})
+        }
 
-    # Define download and upload paths
-    download_path = f"/tmp/{os.path.basename(key)}"
-    upload_path = f"/tmp/converted_{os.path.basename(key)}"  # This will be changed based on target format
+def get_upload_url(event):
+    """
+    Generates a pre-signed S3 URL for securely uploading a source file.
+    """
+    s3 = boto3.client("s3")
+    bucket_name = os.environ.get("UPLOADS_BUCKET")
+    file_name = json.loads(event["body"]).get("fileName")
+    
+    presigned_url = s3.generate_presigned_url(
+        "put_object",
+        Params={"Bucket": bucket_name, "Key": file_name},
+        ExpiresIn=3600,
+    )
+    
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"uploadUrl": presigned_url})
+    }
 
-    try:
-        # Download the file from S3
-        s3.download_file(bucket, key, download_path)
-        print(f"Downloaded file: {key}")
+def convert_file(event):
+    """
+    Initiates a conversion job.
+    """
+    # This is where the conversion logic will go.
+    # For now, we'll just return a dummy job ID.
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"jobId": "12345"})
+    }
 
-        # Determine the output format (e.g., from event metadata or a default)
-        # For now, let's assume we are converting to STL
-        output_ext = ".stl"
-        upload_path = (
-            f"/tmp/converted_{os.path.splitext(os.path.basename(key))[0]}{output_ext}"
-        )
+def get_status(event):
+    """
+    Checks the status of a conversion job.
+    """
+    job_id = event["pathParameters"].get("job_id")
+    # This is where the logic to check the status of the job will go.
+    # For now, we'll just return a dummy status.
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"jobId": job_id, "status": "completed"})
+    }
 
-        # Perform the conversion
-        convert(download_path, upload_path)
-        print(f"Converted file: {os.path.basename(upload_path)}")
-
-        # Upload the converted file to the conversions bucket
-        conversions_bucket = os.environ["CONVERSIONS_BUCKET"]
-        s3.upload_file(upload_path, conversions_bucket, os.path.basename(upload_path))
-        print(f"Uploaded file to: {conversions_bucket}")
-
-        return {"statusCode": 200, "body": json.dumps("Conversion successful!")}
-
-    except Exception as e:
-        print(f"Error during conversion: {e}")
-        return {"statusCode": 500, "body": json.dumps(f"Error during conversion: {e}")}
-    finally:
-        # Clean up the temporary files
-        if os.path.exists(download_path):
-            os.remove(download_path)
-        if os.path.exists(upload_path):
-            os.remove(upload_path)
+def get_download_url(event):
+    """
+    Generates a pre-signed S3 URL for downloading the converted file.
+    """
+    s3 = boto3.client("s3")
+    bucket_name = os.environ.get("CONVERSIONS_BUCKET")
+    job_id = event["pathParameters"].get("job_id")
+    file_name = f"{job_id}.stl" # Assuming the output format is always STL for now
+    
+    presigned_url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket_name, "Key": file_name},
+        ExpiresIn=3600,
+    )
+    
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"downloadUrl": presigned_url})
+    }

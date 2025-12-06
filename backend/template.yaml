@@ -20,6 +20,52 @@ Resources:
     Properties:
       BucketName: c3d-conversions-bucket
 
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Architectures:
+        - x86_64
+      Handler: app.handler
+      Environment:
+        Variables:
+          UPLOADS_BUCKET: !Ref UploadsBucket
+          CONVERSIONS_BUCKET: !Ref ConversionsBucket
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref UploadsBucket
+        - S3ReadPolicy:
+            BucketName: !Ref ConversionsBucket
+    Metadata:
+      DockerTag: python3.9-v1
+      DockerContext: ./c3d
+      Dockerfile: Dockerfile
+    Events:
+      UploadUrl:
+        Type: Api
+        Properties:
+          Path: /upload-url
+          Method: post
+          RestApiId: !Ref ApiGateway
+      Convert:
+        Type: Api
+        Properties:
+          Path: /convert
+          Method: post
+          RestApiId: !Ref ApiGateway
+      Status:
+        Type: Api
+        Properties:
+          Path: /status/{job_id}
+          Method: get
+          RestApiId: !Ref ApiGateway
+      DownloadUrl:
+        Type: Api
+        Properties:
+          Path: /download-url/{job_id}
+          Method: get
+          RestApiId: !Ref ApiGateway
+
   ConversionFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -42,8 +88,13 @@ Resources:
             BucketName: !Ref ConversionsBucket
     Metadata:
       DockerTag: python3.9-v1
-      DockerContext: ./src/c3d
+      DockerContext: ./c3d
       Dockerfile: Dockerfile
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
 
 Outputs:
   UploadsBucket:
