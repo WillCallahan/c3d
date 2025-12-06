@@ -2,6 +2,13 @@
 
 `c3d` is a command-line tool for converting 3D files from one format to another.
 
+## Project Requirements
+
+The detailed requirements for this project are split into two phases:
+
+-   [Phase I: Command-Line Tool](./docs/REQUIREMENTS-PHASE-I.md)
+-   [Phase II: Cloud-Based Service](./docs/REQUIREMENTS-PHASE-II.md)
+
 ## Installation
 
 ### From PyPI

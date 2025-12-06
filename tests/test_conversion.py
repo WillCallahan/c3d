@@ -1,36 +1,56 @@
 import os
 import pytest
-from c3d.main import convert_step_to_stl
+from c3d.main import convert
 import cadquery as cq
 
 @pytest.fixture
-def test_files():
-    """A fixture to create and clean up test files."""
-    step_file = "test_input.step"
-    stl_file = "test_output.stl"
-    
-    # Create a simple STEP file for testing
-    cq.Workplane("XY").box(1, 2, 3).val().exportStep(step_file)
-    
-    yield step_file, stl_file
-    
-    # Clean up the files
-    if os.path.exists(step_file):
-        os.remove(step_file)
-    if os.path.exists(stl_file):
-        os.remove(stl_file)
+def step_file():
+    """Creates a temporary STEP file for testing."""
+    file_path = "test.step"
+    cq.exporters.export(cq.Workplane("XY").box(1, 2, 3), file_path)
+    yield file_path
+    os.remove(file_path)
 
-def test_convert_step_to_stl(test_files):
-    """Test the convert_step_to_stl function."""
-    step_file, stl_file = test_files
-    convert_step_to_stl(step_file, stl_file)
-    assert os.path.exists(stl_file)
-    # Check if the STL file is not empty
-    assert os.path.getsize(stl_file) > 0
+@pytest.fixture
+def iges_file():
+    """Creates a temporary IGES file for testing."""
+    file_path = "test.iges"
+    cq.exporters.export(cq.Workplane("XY").box(1, 2, 3), file_path)
+    yield file_path
+    os.remove(file_path)
+
+@pytest.mark.parametrize("input_file_fixture, output_ext", [
+    ("step_file", ".stl"),
+    ("iges_file", ".stl"),
+])
+def test_conversion(input_file_fixture, output_ext, request):
+    """Test file conversion for different formats."""
+    input_file = request.getfixturevalue(input_file_fixture)
+    output_file = f"test_output{output_ext}"
+    
+    convert(input_file, output_file)
+    
+    assert os.path.exists(output_file)
+    assert os.path.getsize(output_file) > 0
+    os.remove(output_file)
+
+def test_unsupported_input_format():
+    """Test with an unsupported input file format."""
+    with pytest.raises(SystemExit) as e:
+        convert("test.txt", "output.stl")
+    assert e.type == SystemExit
+    assert e.value.code == 1
+
+def test_unsupported_output_format(step_file):
+    """Test with an unsupported output file format."""
+    with pytest.raises(SystemExit) as e:
+        convert(step_file, "output.txt")
+    assert e.type == SystemExit
+    assert e.value.code == 1
 
 def test_non_existent_input_file():
-    """Test the script with a non-existent input file."""
+    """Test with a non-existent input file."""
     with pytest.raises(SystemExit) as e:
-        convert_step_to_stl("non_existent_file.step", "output.stl")
+        convert("non_existent_file.step", "output.stl")
     assert e.type == SystemExit
     assert e.value.code == 1

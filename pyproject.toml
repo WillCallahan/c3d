@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "cadquery",
+    "cqkit",
 ]
 
 [project.scripts]

@@ -1,42 +1,84 @@
 import argparse
 import os
 import sys
+from typing import Callable
 import cadquery as cq
+from cqkit import import_iges_file
 
-def convert_step_to_stl(step_file, stl_file, linear_deflection=0.001, angular_deflection=0.1):
+# A dictionary mapping file extensions to their importer functions
+IMPORTERS: dict[str, Callable] = {
+    ".step": cq.importers.importStep,
+    ".stp": cq.importers.importStep,
+    ".iges": import_iges_file,
+    ".igs": import_iges_file,
+}
+
+# A dictionary mapping file extensions to their exporter functions
+EXPORTERS: dict[str, Callable] = {
+    ".stl": cq.exporters.export,
+    # Add other exporters here as they are implemented
+}
+
+
+def get_file_extension(filename: str) -> str:
+    """Returns the file extension in lowercase."""
+    return os.path.splitext(filename)[1].lower()
+
+
+def convert(input_file: str, output_file: str, linear_deflection: float = 0.001, angular_deflection: float = 0.1):
     """
-    Converts a STEP file to an STL file.
+    Converts a 3D file from one format to another.
 
-    :param step_file: Path to the input STEP file.
-    :param stl_file: Path to the output STL file.
+    :param input_file: Path to the input file.
+    :param output_file: Path to the output file.
     :param linear_deflection: Linear deflection for meshing.
     :param angular_deflection: Angular deflection for meshing.
     """
-    if not os.path.exists(step_file):
-        print(f"Error: Input file not found at {step_file}")
+    if not os.path.exists(input_file):
+        print(f"Error: Input file not found at {input_file}")
         sys.exit(1)
 
-    # Load the STEP file
+    input_ext = get_file_extension(input_file)
+    output_ext = get_file_extension(output_file)
+
+    importer = IMPORTERS.get(input_ext)
+    if not importer:
+        print(f"Error: Unsupported input file format: {input_ext}")
+        print(f"Supported formats are: {list(IMPORTERS.keys())}")
+        sys.exit(1)
+
+    exporter = EXPORTERS.get(output_ext)
+    if not exporter:
+        print(f"Error: Unsupported output file format: {output_ext}")
+        print(f"Supported formats are: {list(EXPORTERS.keys())}")
+        sys.exit(1)
+
+    # Load the shape
     try:
-        shape = cq.importers.importStep(step_file)
+        shape = importer(input_file)
     except Exception as e:
-        print(f"Error: Could not read STEP file: {step_file}")
+        print(f"Error: Could not read input file: {input_file}")
         print(e)
         sys.exit(1)
 
     if shape is None:
-        print("Error: No shape found in STEP file.")
+        print(f"Error: No shape found in {input_file}.")
         sys.exit(1)
 
-    # Export to STL
+    # Export the shape
     try:
-        cq.exporters.export(shape, stl_file, tolerance=linear_deflection, angularTolerance=angular_deflection)
+        # The exporter API is not consistent, some exporters need more arguments
+        if output_ext == ".stl":
+            exporter(shape, output_file, tolerance=linear_deflection, angularTolerance=angular_deflection)
+        else:
+            exporter(shape, output_file)
+
     except Exception as e:
-        print(f"Error: Could not write STL file: {stl_file}")
+        print(f"Error: Could not write output file: {output_file}")
         print(e)
         sys.exit(1)
 
-    print(f"Successfully converted {step_file} to {stl_file}")
+    print(f"Successfully converted {input_file} to {output_file}")
 
 
 def main():
@@ -48,17 +90,7 @@ def main():
 
     args = parser.parse_args()
 
-    # For now, we only support step to stl
-    # In the future, we will use the file extensions to determine the conversion
-    if not args.input.lower().endswith((".step", ".stp")):
-        print("Error: Input file must be a STEP file (.step or .stp).")
-        sys.exit(1)
-    
-    if not args.output.lower().endswith(".stl"):
-        print("Error: Output file must be an STL file (.stl).")
-        sys.exit(1)
-
-    convert_step_to_stl(args.input, args.output, args.lin_deflection, args.ang_deflection)
+    convert(args.input, args.output, args.lin_deflection, args.ang_deflection)
 
 
 if __name__ == "__main__":
