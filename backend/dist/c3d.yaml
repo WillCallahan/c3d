@@ -1,0 +1,30 @@
+PackageIdentifier: YourName.c3d
+PackageVersion: 0.1.0
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.0.0
+---
+PackageIdentifier: YourName.c3d
+PackageVersion: 0.1.0
+DefaultLocale: en-US
+PackageName: c3d
+Publisher: YourName
+License: MIT
+ShortDescription: A 3D file conversion tool.
+Installers:
+  - Architecture: x64
+    InstallerType: inno
+    InstallerUrl: https://github.com/<YOUR-USERNAME>/c3d/releases/download/v0.1.0/c3d-windows-latest.exe
+    InstallerSha256: <SHA256-OF-THE-WINDOWS-EXECUTABLE>
+ManifestType: installer
+ManifestVersion: 1.0.0
+---
+PackageIdentifier: YourName.c3d
+PackageVersion: 0.1.0
+DefaultLocale: en-US
+PackageName: c3d
+Publisher: YourName
+License: MIT
+ShortDescription: A 3D file conversion tool.
+ManifestType: defaultLocale
+ManifestVersion: 1.0.0
