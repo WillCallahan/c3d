@@ -45,15 +45,15 @@ def convert_with_trimesh(input_file: str, output_file: str):
     mesh.export(output_file)
 
 
-def convert(input_file: str, output_file: str, linear_deflection: float = 0.001, angular_deflection: float = 0.1):
+def convert(input_file: str, output_file: str, linear_deflection: float = 0.001, angular_deflection: float = 0.1, input_format: str = None, output_format: str = None):
     """
     Converts a 3D file from one format to another.
     """
     if not os.path.exists(input_file):
         raise FileNotFoundError(f"Input file not found at {input_file}")
 
-    input_ext = get_file_extension(input_file)
-    output_ext = get_file_extension(output_file)
+    input_ext = f".{input_format}" if input_format else get_file_extension(input_file)
+    output_ext = f".{output_format}" if output_format else get_file_extension(output_file)
 
     if input_ext in MESH_FORMATS and output_ext in MESH_FORMATS:
         print("Converting with trimesh...")
@@ -85,6 +85,7 @@ def convert(input_file: str, output_file: str, linear_deflection: float = 0.001,
     print(f"Successfully converted {input_file} to {output_file}")
 
 
+__version__ = "0.1.0"
 def main():
     """
     The main entry point for the CLI.
@@ -92,8 +93,11 @@ def main():
     parser = argparse.ArgumentParser(description="c3d: A 3D file conversion tool.")
     parser.add_argument("input", nargs='+', help="Path to the input file(s). Glob patterns are supported.")
     parser.add_argument("output", help="Path to the output file or directory.")
+    parser.add_argument("--input_format", help="Input file format (e.g., 'step', 'stl').")
+    parser.add_argument("--output_format", help="Output file format (e.g., 'step', 'stl').")
     parser.add_argument("--lin_deflection", type=float, default=0.001, help="Linear deflection for meshing (tolerance).")
     parser.add_argument("--ang_deflection", type=float, default=0.1, help="Angular deflection for meshing.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     args = parser.parse_args()
 
@@ -120,12 +124,13 @@ def main():
     for input_file in input_files:
         if output_is_dir:
             base, _ = os.path.splitext(os.path.basename(input_file))
-            output_file = os.path.join(args.output, f"{base}.stl")
+            output_format = args.output_format if args.output_format else "stl"
+            output_file = os.path.join(args.output, f"{base}.{output_format}")
         else:
             output_file = args.output
 
         try:
-            convert(input_file, output_file, args.lin_deflection, args.ang_deflection)
+            convert(input_file, output_file, args.lin_deflection, args.ang_deflection, args.input_format, args.output_format)
         except (FileNotFoundError, ValueError) as e:
             print(f"Error converting {input_file}: {e}")
 

@@ -60,10 +60,16 @@ Convert multiple files using a glob pattern:
 c3d "models/*.step" output_directory/
 ```
 
+### Note on IGES format
+This tool does not directly support IGES files. It is recommended to convert IGES files to a supported format like STEP or STL before using this tool.
+
 ### Options
 
+-   `--input_format`: Input file format (e.g., 'step', 'stl').
+-   `--output_format`: Output file format (e.g., 'step', 'stl').
 -   `--lin_deflection`: Linear deflection for meshing (tolerance). Default is `0.001`.
 -   `--ang_deflection`: Angular deflection for meshing. Default is `0.1`.
+-   `--version`: Display the version of the tool.
 
 #### Example with options
 
