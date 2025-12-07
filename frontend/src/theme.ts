@@ -18,6 +18,7 @@ export const lightTheme = {
   cardHighlight: '#F6F7FF',
   dropzoneBg: 'rgba(255, 255, 255, 0.95)',
   dropzoneBorder: 'rgba(91, 108, 255, 0.45)',
+  dropzoneAccent: 'linear-gradient(135deg, rgba(91,108,255,0.2), rgba(255,123,202,0.22))',
   accent: '#FF7BCA',
   gradient: 'linear-gradient(135deg, #6B66FF 0%, #8A85FF 50%, #B6A8FF 100%)',
   pageBackground:
@@ -45,6 +46,7 @@ export const darkTheme = {
   cardHighlight: 'rgba(148, 163, 184, 0.08)',
   dropzoneBg: 'rgba(15, 23, 42, 0.85)',
   dropzoneBorder: 'rgba(140, 147, 255, 0.55)',
+  dropzoneAccent: 'linear-gradient(135deg, rgba(140,147,255,0.25), rgba(255,138,190,0.25))',
   accent: '#FF8ABE',
   gradient: 'linear-gradient(135deg, #7F7BFF 0%, #9E71FF 50%, #FF7FBF 100%)',
   pageBackground:

@@ -8,9 +8,9 @@ import {
   Sun,
   UploadCloud,
   Sparkles,
-  ShieldCheck,
   Download,
   Trash2,
+  BarChart3,
 } from 'lucide-react';
 import { lightTheme, darkTheme } from './theme';
 import { GlobalStyle } from './globalStyles';
@@ -24,7 +24,7 @@ const heroStats = [
   {
     value: '24K+',
     label: 'Conversions completed',
-    detail: 'since the last release window',
+    detail: 'in the last 30 days',
   },
   {
     value: `${formatOptions.length}`,
@@ -32,11 +32,23 @@ const heroStats = [
     detail: 'STEP / STL / OBJ / 3MF',
   },
   {
-    value: '<60s',
-    label: 'Avg job duration',
-    detail: 'powered by AWS Lambda fan-out',
+    value: '45s',
+    label: 'Avg runtime',
+    detail: 'p95 across recent jobs',
   },
 ];
+
+const usageTrend = [
+  { label: 'Mon', value: 42 },
+  { label: 'Tue', value: 68 },
+  { label: 'Wed', value: 80 },
+  { label: 'Thu', value: 52 },
+  { label: 'Fri', value: 94 },
+  { label: 'Sat', value: 63 },
+  { label: 'Sun', value: 76 },
+];
+
+const usagePeak = Math.max(...usageTrend.map((point) => point.value));
 
 const App = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -90,7 +102,7 @@ const App = () => {
       const sourceFormat = getSourceFormat(file.name);
       setConversionStatus((prev) => ({
         ...prev,
-        [file.name]: 'Preparing secure upload...',
+        [file.name]: 'Preparing upload...',
       }));
       setProgress((prev) => ({ ...prev, [file.name]: 0 }));
 
@@ -102,7 +114,7 @@ const App = () => {
 
         setConversionStatus((prev) => ({
           ...prev,
-          [file.name]: 'Uploading to S3...',
+          [file.name]: 'Uploading file...',
         }));
         await axios.put(uploadUrl, file, {
           headers: { 'Content-Type': file.type },
@@ -116,7 +128,7 @@ const App = () => {
 
         setConversionStatus((prev) => ({
           ...prev,
-          [file.name]: 'Converting in Lambda...',
+          [file.name]: 'Converting...',
         }));
         const convertResponse = await axios.post('/api/convert', {
           fileName: file.name,
@@ -203,20 +215,11 @@ const App = () => {
               </BrandIcon>
               <div>
                 <BrandName>c3d Cloud Studio</BrandName>
-                <BrandSubtitle>
-                  STEP {'<->'} STL {'<->'} OBJ
-                </BrandSubtitle>
+                <BrandSubtitle>STEP {'<->'} STL {'<->'} OBJ</BrandSubtitle>
               </div>
               <BetaPill>Beta</BetaPill>
             </Brand>
             <TopActions>
-              <DocsLink
-                href="https://github.com/WillCallahan/step_to_stl"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Product requirements
-              </DocsLink>
               <ThemeToggleButton
                 onClick={toggleTheme}
                 aria-label="Toggle light or dark mode"
@@ -227,46 +230,73 @@ const App = () => {
           </TopBar>
 
           <Layout>
-            <HeroSection
-              as={motion.section}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <HeroBadge>
-                <span>Phase IV</span>
-                Experience refresh inspired by Dribbble
-              </HeroBadge>
-              <HeroTitle>Launch-grade 3D conversions with a single drop.</HeroTitle>
-              <HeroDescription>
-                Upload CAD files, select a target, and let our Lambda-backed
-                pipeline deliver lightweight meshes with deterministic job
-                tracking and shareable download links.
-              </HeroDescription>
-              <FeatureList>
-                <FeatureItem>
-                  <FeatureIcon>
-                    <ShieldCheck size={18} />
-                  </FeatureIcon>
-                  Zero-trust uploads over pre-signed S3 URLs
-                </FeatureItem>
-                <FeatureItem>
-                  <FeatureIcon>
-                    <Sparkles size={18} />
-                  </FeatureIcon>
-                  Deterministic job IDs & semantic status updates
-                </FeatureItem>
-              </FeatureList>
-              <StatsRow>
-                {heroStats.map((stat) => (
-                  <StatCard key={stat.label}>
-                    <StatValue>{stat.value}</StatValue>
-                    <StatLabel>{stat.label}</StatLabel>
-                    <StatDetail>{stat.detail}</StatDetail>
-                  </StatCard>
-                ))}
-              </StatsRow>
-            </HeroSection>
+            <Sidebar>
+              <HeroSection
+                as={motion.section}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <HeroBadge>
+                  <span>Phase IV</span>
+                  Production-ready workspace
+                </HeroBadge>
+                <HeroTitle>Launch-grade conversions without fuss.</HeroTitle>
+                <HeroDescription>
+                  Drag, drop, and convert the formats your customers rely on with
+                  confident monitoring and delightful UX.
+                </HeroDescription>
+                <FeatureList>
+                  <FeatureItem>Batch-drop multiple CAD formats instantly</FeatureItem>
+                  <FeatureItem>Live job history with shareable download links</FeatureItem>
+                </FeatureList>
+
+                <UsageCard>
+                  <UsageHeader>
+                    <UsageTitle>
+                      <BarChart3 size={18} /> Usage overview
+                    </UsageTitle>
+                    <UsageMeta>Last 7 days</UsageMeta>
+                  </UsageHeader>
+                  <UsageGrid>
+                    <UsageTile>
+                      <UsageValue>1.2K</UsageValue>
+                      <UsageLabel>Jobs</UsageLabel>
+                    </UsageTile>
+                    <UsageTile>
+                      <UsageValue>320</UsageValue>
+                      <UsageLabel>Daily peak</UsageLabel>
+                    </UsageTile>
+                    <UsageTile>
+                      <UsageValue>45s</UsageValue>
+                      <UsageLabel>Avg runtime</UsageLabel>
+                    </UsageTile>
+                  </UsageGrid>
+                  <UsageChart>
+                    {usageTrend.map((point) => (
+                      <UsageBarWrapper key={point.label}>
+                        <UsageBar
+                          style={{
+                            height: `${(point.value / usagePeak) * 100}%`,
+                          }}
+                        />
+                        <UsageBarLabel>{point.label}</UsageBarLabel>
+                      </UsageBarWrapper>
+                    ))}
+                  </UsageChart>
+                </UsageCard>
+
+                <StatsRow>
+                  {heroStats.map((stat) => (
+                    <StatCard key={stat.label}>
+                      <StatValue>{stat.value}</StatValue>
+                      <StatLabel>{stat.label}</StatLabel>
+                      <StatDetail>{stat.detail}</StatDetail>
+                    </StatCard>
+                  ))}
+                </StatsRow>
+              </HeroSection>
+            </Sidebar>
 
             <ConverterPanel
               as={motion.section}
@@ -278,7 +308,7 @@ const App = () => {
                 <div>
                   <PanelTitle>Conversion workspace</PanelTitle>
                   <PanelSubtitle>
-                    Batch files with instant progress tracking and smart retries.
+                    Keep everything in one compact board with instant feedback.
                   </PanelSubtitle>
                 </div>
                 <PanelBadge>Realtime</PanelBadge>
@@ -290,14 +320,17 @@ const App = () => {
                   $isActive={isDragActive}
                 >
                   <input {...getInputProps()} />
+                  <DropzoneBadge>Upload queue</DropzoneBadge>
                   <DropIcon>
                     <UploadCloud size={28} />
                   </DropIcon>
                   <DropTitle>Drag & drop files or browse</DropTitle>
                   <DropHint>
-                    Secure uploads & automatic format detection (STEP, STL, OBJ,
-                    3MF).
+                    Upload STEP, STL, OBJ, 3MF, and more to queue conversions.
                   </DropHint>
+                  <DropEmphasis>
+                    Drop anywhere in this card to add files instantly
+                  </DropEmphasis>
                   <BrowseButton onClick={handleBrowseClick}>
                     Browse files
                   </BrowseButton>
@@ -306,17 +339,17 @@ const App = () => {
                 <SideColumn>
                   <AdSpot>
                     <AdBadge>AdSense</AdBadge>
-                    <AdHeadline>Reserved ad inventory</AdHeadline>
+                    <AdHeadline>Reserve monetization space</AdHeadline>
                     <AdCopy>
-                      Inject Google AdSense code via CI/CD secrets to monetize the
-                      workspace without impacting UX.
+                      Inject Google AdSense snippets during CI to activate ads
+                      without touching the codebase.
                     </AdCopy>
                   </AdSpot>
                   <SideCard>
-                    <SideCardTitle>Serverless ready</SideCardTitle>
+                    <SideCardTitle>Usage tips</SideCardTitle>
                     <SideCardBody>
-                      AWS Lambda handles conversions while S3 keeps both uploads
-                      and downloads encrypted at rest.
+                      Queue batches, monitor status, and share download links once
+                      jobs complete.
                     </SideCardBody>
                   </SideCard>
                 </SideColumn>
@@ -360,89 +393,99 @@ const App = () => {
                 </GhostButton>
               </ActionsRow>
               <HelperText>
-                <Sparkles size={16} />
-                Jobs stream through API Gateway, and you can poll or subscribe to
-                a webhook for enterprise pipelines.
+                Keep this tab open to watch progress in real time or copy the
+                download link once ready.
               </HelperText>
 
-              <FileList>
-                {files.length === 0 ? (
-                  <EmptyState>
-                    <EmptyTitle>No files yet</EmptyTitle>
-                    <EmptyCopy>
-                      Drop STEP, STL, OBJ, or 3MF files to see live progress &
-                      download links once ready.
-                    </EmptyCopy>
-                  </EmptyState>
-                ) : (
-                  <AnimatePresence initial={false}>
-                    {files.map((file, index) => {
-                      const status = conversionStatus[file.name];
-                      const progressValue = progress[file.name] || 0;
-                      const downloadUrl = downloadUrls[file.name];
-                      const { tone, label } = getChipDetails(status);
-                      const isBusy = isActiveStatus(status);
+              {files.length === 0 ? (
+                <EmptyState>
+                  <EmptyTitle>No files yet</EmptyTitle>
+                  <EmptyCopy>
+                    Drop STEP, STL, OBJ, or 3MF files to see live progress &
+                    download links in this table.
+                  </EmptyCopy>
+                </EmptyState>
+              ) : (
+                <FileTableWrapper>
+                  <StyledTable>
+                    <thead>
+                      <tr>
+                        <TableHeader>File</TableHeader>
+                        <TableHeader>Details</TableHeader>
+                        <TableHeader>Progress</TableHeader>
+                        <TableHeader>Status</TableHeader>
+                        <TableHeader align="right">Actions</TableHeader>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <AnimatePresence initial={false}>
+                        {files.map((file, index) => {
+                          const status = conversionStatus[file.name];
+                          const progressValue = progress[file.name] || 0;
+                          const downloadUrl = downloadUrls[file.name];
+                          const { tone, label } = getChipDetails(status);
+                          const isBusy = isActiveStatus(status);
 
-                      return (
-                        <FileCard
-                          key={`${file.name}-${index}`}
-                          layout
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{ duration: 0.25 }}
-                        >
-                          <FileHeader>
-                            <div>
-                              <FileName>{file.name}</FileName>
-                              <FileMeta>
-                                {formatBytes(file.size)} / {getSourceFormat(file.name).toUpperCase() || 'AUTO'}
-                              </FileMeta>
-                            </div>
-                            <StatusChip tone={tone}>{label}</StatusChip>
-                          </FileHeader>
-
-                          <ProgressWrapper>
-                            <ProgressTrack>
-                              <ProgressIndicator style={{ width: `${progressValue}%` }} />
-                            </ProgressTrack>
-                            <ProgressInfo>
-                              <span>{status || 'Waiting to start'}</span>
-                              <strong>{progressValue}%</strong>
-                            </ProgressInfo>
-                          </ProgressWrapper>
-
-                          <FileActions>
-                            {downloadUrl ? (
-                              <DownloadButton
-                                href={downloadUrl}
-                                download
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <Download size={16} />
-                                Download
-                              </DownloadButton>
-                            ) : (
-                              <PlaceholderAction>
-                                {isBusy ? 'Processing...' : 'Waiting for conversion'}
-                              </PlaceholderAction>
-                            )}
-                            <FileActionIcon
-                              type="button"
-                              onClick={() => handleRemoveFile(file.name)}
-                              disabled={isBusy}
-                              aria-label={`Remove ${file.name}`}
+                          return (
+                            <TableRow
+                              key={`${file.name}-${index}`}
+                              as={motion.tr}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
                             >
-                              <Trash2 size={16} />
-                            </FileActionIcon>
-                          </FileActions>
-                        </FileCard>
-                      );
-                    })}
-                  </AnimatePresence>
-                )}
-              </FileList>
+                              <TableCell>
+                                <FileName>{file.name}</FileName>
+                              </TableCell>
+                              <TableCell>
+                                <FileMeta>
+                                  {formatBytes(file.size)} / {getSourceFormat(file.name).toUpperCase() || 'AUTO'}
+                                </FileMeta>
+                              </TableCell>
+                              <TableCell>
+                                <MiniProgress>
+                                  <MiniProgressTrack>
+                                    <MiniProgressThumb style={{ width: `${progressValue}%` }} />
+                                  </MiniProgressTrack>
+                                  <small>{progressValue}%</small>
+                                </MiniProgress>
+                              </TableCell>
+                              <TableCell>
+                                <StatusChip tone={tone}>{label}</StatusChip>
+                              </TableCell>
+                              <TableCell align="right">
+                                {downloadUrl ? (
+                                  <DownloadButton
+                                    href={downloadUrl}
+                                    download
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <Download size={16} />
+                                    Download
+                                  </DownloadButton>
+                                ) : (
+                                  <PlaceholderAction>
+                                    {isBusy ? 'Processing...' : 'Waiting'}
+                                  </PlaceholderAction>
+                                )}
+                                <FileActionIcon
+                                  onClick={() => handleRemoveFile(file.name)}
+                                  disabled={isBusy}
+                                  aria-label={`Remove ${file.name}`}
+                                >
+                                  <Trash2 size={16} />
+                                </FileActionIcon>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </tbody>
+                  </StyledTable>
+                </FileTableWrapper>
+              )}
             </ConverterPanel>
           </Layout>
         </Shell>
@@ -485,7 +528,7 @@ const getChipDetails = (status?: string): { tone: ChipTone; label: string } => {
 
 const GradientPage = styled.div`
   min-height: 100vh;
-  padding: 2.5rem 1.5rem 3rem;
+  padding: 2rem 1.25rem 2.5rem;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -500,34 +543,21 @@ const Backdrop = styled.div`
 
 const GlowOne = styled.div`
   position: absolute;
-  width: 520px;
-  height: 520px;
+  width: 420px;
+  height: 420px;
   background: ${({ theme }) => theme.glow};
   filter: blur(120px);
   opacity: 0.35;
-  top: -160px;
-  right: -160px;
+  top: -140px;
+  right: -140px;
   border-radius: 50%;
-  animation: float 14s ease-in-out infinite;
-
-  @keyframes float {
-    0% {
-      transform: translate3d(0, 0, 0);
-    }
-    50% {
-      transform: translate3d(-30px, 25px, 0);
-    }
-    100% {
-      transform: translate3d(0, 0, 0);
-    }
-  }
 `;
 
 const GlowTwo = styled(GlowOne)`
-  width: 360px;
-  height: 360px;
-  left: -140px;
-  bottom: 0;
+  width: 320px;
+  height: 320px;
+  left: -120px;
+  bottom: -40px;
   opacity: 0.25;
 `;
 
@@ -587,16 +617,6 @@ const TopActions = styled.div`
   gap: 0.75rem;
 `;
 
-const DocsLink = styled.a`
-  text-decoration: none;
-  font-weight: 600;
-  color: ${({ theme }) => theme.heading};
-  padding: 0.45rem 0.85rem;
-  border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  background: ${({ theme }) => theme.card};
-`;
-
 const ThemeToggleButton = styled.button.attrs({ type: 'button' })`
   width: 44px;
   height: 44px;
@@ -610,16 +630,26 @@ const ThemeToggleButton = styled.button.attrs({ type: 'button' })`
 `;
 
 const Layout = styled.div`
-  margin-top: 2.5rem;
+  margin-top: 2rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Sidebar = styled.div`
+  position: sticky;
+  top: 1rem;
 `;
 
 const HeroSection = styled.section`
   background: ${({ theme }) => theme.card};
-  border-radius: 28px;
-  padding: 2.25rem;
+  border-radius: 24px;
+  padding: 1.8rem;
   border: 1px solid ${({ theme }) => theme.borderColor};
   box-shadow: ${({ theme }) => theme.cardShadow};
 `;
@@ -628,7 +658,7 @@ const HeroBadge = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.3rem 0.75rem;
@@ -638,78 +668,141 @@ const HeroBadge = styled.div`
 `;
 
 const HeroTitle = styled.h1`
-  margin: 1.25rem 0 0.75rem;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.1;
+  margin: 1rem 0 0.5rem;
+  font-size: 1.8rem;
+  line-height: 1.2;
   color: ${({ theme }) => theme.heading};
 `;
 
 const HeroDescription = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.muted};
-  font-size: 1.05rem;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.5;
 `;
 
-const FeatureList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin: 1.5rem 0;
-`;
-
-const FeatureItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+const FeatureList = styled.ul`
+  padding-left: 1.2rem;
+  margin: 1rem 0 1.25rem;
+  color: ${({ theme }) => theme.heading};
   font-weight: 500;
+`;
+
+const FeatureItem = styled.li`
+  margin-bottom: 0.4rem;
+`;
+
+const UsageCard = styled.div`
+  border-radius: 20px;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  padding: 1.2rem;
+  background: ${({ theme }) => theme.cardHighlight};
+`;
+
+const UsageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   color: ${({ theme }) => theme.heading};
 `;
 
-const FeatureIcon = styled.span`
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: ${({ theme }) => theme.primarySoft};
-  color: ${({ theme }) => theme.primary};
+const UsageTitle = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+`;
+
+const UsageMeta = styled.span`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.muted};
+`;
+
+const UsageGrid = styled.div`
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+`;
+
+const UsageTile = styled.div`
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  background: ${({ theme }) => theme.card};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+`;
+
+const UsageValue = styled.div`
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.heading};
+`;
+
+const UsageLabel = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.muted};
+`;
+
+const UsageChart = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+  height: 130px;
+`;
+
+const UsageBarWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+`;
+
+const UsageBar = styled.div`
+  width: 100%;
+  border-radius: 8px 8px 2px 2px;
+  background: ${({ theme }) => theme.gradient};
+`;
+
+const UsageBarLabel = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.muted};
 `;
 
 const StatsRow = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 0.8rem;
+  margin-top: 1.2rem;
 `;
 
 const StatCard = styled.div`
-  padding: 1rem;
+  padding: 0.9rem;
   border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.borderColor};
   background: ${({ theme }) => theme.cardHighlight};
 `;
 
 const StatValue = styled.div`
-  font-size: 1.9rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: ${({ theme }) => theme.heading};
 `;
 
 const StatLabel = styled.div`
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.muted};
 `;
 
 const StatDetail = styled.div`
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: ${({ theme }) => theme.muted};
 `;
 
 const ConverterPanel = styled.section`
   background: ${({ theme }) => theme.panel};
-  border-radius: 32px;
-  padding: 2.25rem;
+  border-radius: 24px;
+  padding: 1.75rem;
   border: 1px solid ${({ theme }) => theme.borderColor};
   box-shadow: ${({ theme }) => theme.shadow};
 `;
@@ -723,7 +816,7 @@ const PanelHeader = styled.div`
 
 const PanelTitle = styled.h2`
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   color: ${({ theme }) => theme.heading};
 `;
 
@@ -742,9 +835,9 @@ const PanelBadge = styled.span`
 
 const DropRow = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 1.25rem;
-  margin-top: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 1rem;
+  margin-top: 1.25rem;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -752,31 +845,55 @@ const DropRow = styled.div`
 `;
 
 const DropzoneCard = styled.div<{ $isActive: boolean }>`
-  border-radius: 26px;
+  border-radius: 22px;
   border: 1.5px dashed
     ${({ theme, $isActive }) =>
-      $isActive ? theme.primary : theme.borderColor};
+      $isActive ? theme.primary : theme.dropzoneBorder};
   background: ${({ theme }) => theme.dropzoneBg};
-  padding: 2rem;
+  padding: 1.8rem 1.4rem;
   text-align: center;
   cursor: pointer;
-  min-height: 260px;
+  min-height: 240px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.75rem;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  gap: 0.65rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${({ theme }) => theme.cardShadow};
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: ${({ theme }) => theme.dropzoneAccent};
+    opacity: ${({ $isActive }) => ($isActive ? 0.85 : 0.55)};
+    transition: opacity 0.3s ease;
+  }
+
+  & > * {
+    position: relative;
+    z-index: 1;
   }
 `;
 
+const DropzoneBadge = styled.span`
+  align-self: center;
+  padding: 0.15rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`;
+
 const DropIcon = styled.div`
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
   background: ${({ theme }) => theme.primarySoft};
   color: ${({ theme }) => theme.primary};
   display: grid;
@@ -785,21 +902,31 @@ const DropIcon = styled.div`
 `;
 
 const DropTitle = styled.h3`
-  margin: 0.6rem 0 0;
+  margin: 0.5rem 0 0;
   color: ${({ theme }) => theme.heading};
 `;
 
 const DropHint = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.muted};
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+`;
+
+const DropEmphasis = styled.div`
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.heading};
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  margin: 0 auto;
 `;
 
 const BrowseButton = styled.button.attrs({ type: 'button' })`
   align-self: center;
   border-radius: 999px;
   border: none;
-  padding: 0.6rem 1.4rem;
+  padding: 0.5rem 1.2rem;
   font-weight: 600;
   background: ${({ theme }) => theme.gradient};
   color: #fff;
@@ -809,12 +936,12 @@ const BrowseButton = styled.button.attrs({ type: 'button' })`
 const SideColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 `;
 
 const AdSpot = styled.div`
-  border-radius: 24px;
-  padding: 1.25rem;
+  border-radius: 20px;
+  padding: 1rem;
   background: ${({ theme }) => theme.adBg};
   color: #f4f6ff;
   border: 1px solid ${({ theme }) => theme.adBorder};
@@ -835,14 +962,14 @@ const AdHeadline = styled.div`
 
 const AdCopy = styled.p`
   margin: 0.35rem 0 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.75);
 `;
 
 const SideCard = styled.div`
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.borderColor};
-  padding: 1rem;
+  padding: 0.9rem;
   background: ${({ theme }) => theme.card};
 `;
 
@@ -853,12 +980,12 @@ const SideCardTitle = styled.div`
 
 const SideCardBody = styled.p`
   margin: 0.35rem 0 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.muted};
 `;
 
 const FormatSection = styled.div`
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
 `;
 
 const SectionLabel = styled.div`
@@ -866,19 +993,20 @@ const SectionLabel = styled.div`
   letter-spacing: 0.08em;
   font-size: 0.75rem;
   color: ${({ theme }) => theme.muted};
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 `;
 
 const FormatGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.6rem;
 `;
 
 const FormatPill = styled.button.attrs({ type: 'button' })<{ $active: boolean }>`
   border-radius: 999px;
-  padding: 0.55rem 1.3rem;
+  padding: 0.5rem 1.1rem;
   font-weight: 600;
+  font-size: 0.9rem;
   border: 1px solid
     ${({ theme, $active }) => ($active ? theme.primary : theme.borderColor)};
   color: ${({ theme, $active }) =>
@@ -891,15 +1019,15 @@ const FormatPill = styled.button.attrs({ type: 'button' })<{ $active: boolean }>
 const ActionsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
 `;
 
 const PrimaryButton = styled.button.attrs({ type: 'button' })`
   flex: 1;
-  min-width: 180px;
-  border-radius: 14px;
-  padding: 0.85rem 1.5rem;
+  min-width: 160px;
+  border-radius: 12px;
+  padding: 0.7rem 1.4rem;
   border: none;
   font-weight: 600;
   background: ${({ theme }) => theme.gradient};
@@ -922,23 +1050,14 @@ const GhostButton = styled(PrimaryButton)`
 
 const HelperText = styled.p`
   margin: 0.75rem 0 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.muted};
 `;
 
-const FileList = styled.div`
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
 const EmptyState = styled.div`
-  padding: 2rem;
-  border-radius: 24px;
+  margin-top: 1.2rem;
+  padding: 1.5rem;
+  border-radius: 18px;
   border: 1px dashed ${({ theme }) => theme.borderColor};
   text-align: center;
   color: ${({ theme }) => theme.muted};
@@ -953,19 +1072,41 @@ const EmptyCopy = styled.p`
   margin: 0.4rem 0 0;
 `;
 
-const FileCard = styled(motion.div)`
-  border-radius: 22px;
+const FileTableWrapper = styled.div`
+  margin-top: 1.2rem;
   border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 16px;
+  overflow: hidden;
   background: ${({ theme }) => theme.card};
-  padding: 1.25rem;
-  box-shadow: ${({ theme }) => theme.cardShadow};
 `;
 
-const FileHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+const StyledTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+`;
+
+const TableHeader = styled.th<{ align?: 'left' | 'right' }>`
+  text-align: ${({ align }) => align || 'left'};
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.muted};
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+`;
+
+const TableRow = styled.tr`
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const TableCell = styled.td<{ align?: 'left' | 'right' }>`
+  padding: 0.75rem 1rem;
+  text-align: ${({ align }) => align || 'left'};
+  vertical-align: middle;
+  color: ${({ theme }) => theme.heading};
 `;
 
 const FileName = styled.div`
@@ -974,38 +1115,27 @@ const FileName = styled.div`
 `;
 
 const FileMeta = styled.div`
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.muted};
 `;
 
-const ProgressWrapper = styled.div`
-  margin-top: 1rem;
+const MiniProgress = styled.div`
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
 `;
 
-const ProgressTrack = styled.div`
-  height: 8px;
+const MiniProgressTrack = styled.div`
+  flex: 1;
+  height: 6px;
   border-radius: 999px;
   background: ${({ theme }) => theme.cardHighlight};
   overflow: hidden;
 `;
 
-const ProgressIndicator = styled.div`
+const MiniProgressThumb = styled.div`
   height: 100%;
   background: ${({ theme }) => theme.gradient};
-`;
-
-const ProgressInfo = styled.div`
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.muted};
-
-  strong {
-    color: ${({ theme }) => theme.heading};
-  }
 `;
 
 const StatusChip = styled.span<{ tone: ChipTone }>`
@@ -1031,40 +1161,34 @@ const StatusChip = styled.span<{ tone: ChipTone }>`
     }[tone])};
 `;
 
-const FileActions = styled.div`
-  margin-top: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-`;
-
 const DownloadButton = styled.a`
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.45rem 1rem;
+  padding: 0.35rem 0.9rem;
   border-radius: 999px;
   text-decoration: none;
   font-weight: 600;
   background: ${({ theme }) => theme.primarySoft};
   color: ${({ theme }) => theme.primary};
+  margin-right: 0.5rem;
 `;
 
 const PlaceholderAction = styled.span`
   color: ${({ theme }) => theme.muted};
   font-size: 0.85rem;
+  margin-right: 0.5rem;
 `;
 
 const FileActionIcon = styled.button.attrs({ type: 'button' })`
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1px solid ${({ theme }) => theme.borderColor};
   background: ${({ theme }) => theme.card};
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: ${({ theme }) => theme.muted};
   cursor: pointer;
 
