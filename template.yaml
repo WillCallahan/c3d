@@ -115,6 +115,9 @@ Resources:
       PackageType: Image
       Timeout: 300
       MemorySize: 1024
+      ImageConfig:
+        Command:
+          - app.handler
       Policies:
         - Statement:
           - Effect: Allow
@@ -152,8 +155,6 @@ Resources:
       DockerTag: python3.12-v1
       DockerContext: ./backend/c3d
       Dockerfile: Dockerfile
-      DockerBuildArgs:
-        HANDLER: app.handler
 
   ConversionFunction:
     Type: AWS::Serverless::Function
@@ -163,6 +164,9 @@ Resources:
       MemorySize: 1024
       EphemeralStorage:
         Size: 10240
+      ImageConfig:
+        Command:
+          - converter.handler
       Policies:
         - Statement:
           - Effect: Allow
@@ -183,8 +187,6 @@ Resources:
       DockerTag: python3.12-v1
       DockerContext: ./backend/c3d
       Dockerfile: Dockerfile
-      DockerBuildArgs:
-        HANDLER: converter.handler
 
   ConversionFunctionPermission:
     Type: AWS::Lambda::Permission
