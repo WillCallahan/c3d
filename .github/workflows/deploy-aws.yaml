@@ -26,8 +26,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::299585817196:role/GitHubActionsC3DDeployRole
+          aws-region: us-east-1
       
       - name: SAM build
         run: sam build
@@ -38,9 +38,9 @@ jobs:
       - name: Get stack outputs
         id: stack-outputs
         run: |
-          echo "api_endpoint=$(aws cloudformation describe-stacks --stack-name c3d-stack --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' --output text)" >> $GITHUB_OUTPUT
-          echo "frontend_bucket=$(aws cloudformation describe-stacks --stack-name c3d-stack --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' --output text)" >> $GITHUB_OUTPUT
-          echo "cloudfront_id=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName==\`$(aws cloudformation describe-stacks --stack-name c3d-stack --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' --output text).s3.amazonaws.com\`].Id" --output text)" >> $GITHUB_OUTPUT
+          echo "api_endpoint=$(aws cloudformation describe-stacks --stack-name c3d-prod --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' --output text)" >> $GITHUB_OUTPUT
+          echo "frontend_bucket=$(aws cloudformation describe-stacks --stack-name c3d-prod --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' --output text)" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName==\`$(aws cloudformation describe-stacks --stack-name c3d-prod --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' --output text).s3.amazonaws.com\`].Id" --output text)" >> $GITHUB_OUTPUT
     
     outputs:
       api_endpoint: ${{ steps.stack-outputs.outputs.api_endpoint }}
@@ -64,8 +64,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::299585817196:role/GitHubActionsC3DDeployRole
+          aws-region: us-east-1
       
       - name: Build frontend
         working-directory: frontend

@@ -491,18 +491,53 @@ const App = () => {
               )}
             </ConverterPanel>
           </Layout>
+          <SeoContent />
         </Shell>
       </GradientPage>
     </ThemeProvider>
   );
 };
 
+const SeoContent = () => (
+  <SeoWrapper>
+    <SeoTitle>Your Go-To Online 3D File Converter</SeoTitle>
+    <SeoText>
+      C3D Cloud Studio provides a powerful and easy-to-use online tool to
+      convert your 3D models between various formats. Whether you're a
+      professional engineer working with STEP files, a hobbyist with an STL file
+      for 3D printing, or a game developer using OBJ, our converter has you
+      covered.
+    </SeoText>
+    <SeoSubtitle>Supported Formats</SeoSubtitle>
+    <SeoText>
+      We support a wide range of formats for all your conversion needs. Here are
+      some of the most popular conversions we handle:
+    </SeoText>
+    <ul>
+      <li>Convert STEP to STL</li>
+      <li>Convert STL to STEP</li>
+      <li>Convert OBJ to STL</li>
+      <li>Convert 3MF to OBJ</li>
+    </ul>
+    <SeoSubtitle>Fast and Secure Conversions</SeoSubtitle>
+    <SeoText>
+      Our cloud-based infrastructure ensures that your files are converted
+      quickly and securely. We use industry-standard encryption to protect your
+      data, and our scalable architecture can handle even the largest and most
+      complex 3D models.
+    </SeoText>
+  </SeoWrapper>
+);
+
 const formatBytes = (bytes: number) => {
   if (!bytes) {
     return '0 B';
   }
   const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1);
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    sizes.length - 1
+  );
   const value = bytes / 1024 ** i;
   return `${value.toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
 };
@@ -528,6 +563,32 @@ const getChipDetails = (status?: string): { tone: ChipTone; label: string } => {
   }
   return { tone: 'primary', label: status };
 };
+
+const SeoWrapper = styled.section`
+  margin-top: 4rem;
+  padding: 2rem;
+  background: ${({ theme }) => theme.card};
+  border-radius: 24px;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+`;
+
+const SeoTitle = styled.h2`
+  font-size: 1.5rem;
+  color: ${({ theme }) => theme.heading};
+  margin-bottom: 1rem;
+`;
+
+const SeoSubtitle = styled.h3`
+  font-size: 1.2rem;
+  color: ${({ theme }) => theme.heading};
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+`;
+
+const SeoText = styled.p`
+  color: ${({ theme }) => theme.muted};
+  line-height: 1.6;
+`;
 
 const GradientPage = styled.div`
   min-height: 100vh;
@@ -632,7 +693,7 @@ const ThemeToggleButton = styled.button.attrs({ type: 'button' })`
   cursor: pointer;
 `;
 
-const Layout = styled.div`
+const Layout = styled.main`
   margin-top: 2rem;
   display: grid;
   grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
