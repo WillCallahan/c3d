@@ -21,7 +21,6 @@ Globals:
 Resources:
   UploadsBucket:
     Type: AWS::S3::Bucket
-    DependsOn: S3InvokeLambdaPermission
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -37,10 +36,6 @@ Resources:
           - AllowedOrigins: ['*']
             AllowedMethods: [PUT, POST]
             AllowedHeaders: ['*']
-      NotificationConfiguration:
-        LambdaConfigurations:
-          - Event: s3:ObjectCreated:*
-            Function: !GetAtt ConversionFunction.Arn
   
   ConversionsBucket:
     Type: AWS::S3::Bucket
@@ -181,15 +176,6 @@ Resources:
             BucketName: !Ref ConversionsBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref JobsTable
-
-  S3InvokeLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt ConversionFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: s3.amazonaws.com
-      SourceArn: !GetAtt UploadsBucket.Arn
-      SourceAccount: !Ref AWS::AccountId
 
 Outputs:
   ApiEndpoint:
