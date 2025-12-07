@@ -1,6 +1,10 @@
 import boto3
 import os
 import json
+import uuid
+from main import convert
+
+JOB_STATUS = {}
 
 def handler(event, context):
     """
@@ -44,11 +48,43 @@ def convert_file(event):
     """
     Initiates a conversion job.
     """
-    # This is where the conversion logic will go.
-    # For now, we'll just return a dummy job ID.
+    s3 = boto3.client("s3")
+    uploads_bucket = os.environ.get("UPLOADS_BUCKET")
+    conversions_bucket = os.environ.get("CONVERSIONS_BUCKET")
+    
+    body = json.loads(event["body"])
+    file_name = body.get("fileName")
+    source_format = body.get("sourceFormat")
+    target_format = body.get("targetFormat")
+    
+    job_id = str(uuid.uuid4())
+    JOB_STATUS[job_id] = {"status": "processing", "target_format": target_format}
+    
+    input_file = f"/tmp/{file_name}"
+    output_file = f"/tmp/{job_id}.{target_format}"
+    
+    s3.download_file(uploads_bucket, file_name, input_file)
+    
+    try:
+        convert(input_file, output_file, input_format=source_format, output_format=target_format)
+        s3.upload_file(output_file, conversions_bucket, f"{job_id}.{target_format}")
+        JOB_STATUS[job_id]["status"] = "completed"
+    except Exception as e:
+        print(f"Conversion failed: {e}")
+        JOB_STATUS[job_id]["status"] = "failed"
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"message": "Conversion failed"})
+        }
+    finally:
+        if os.path.exists(input_file):
+            os.remove(input_file)
+        if os.path.exists(output_file):
+            os.remove(output_file)
+            
     return {
         "statusCode": 200,
-        "body": json.dumps({"jobId": "12345"})
+        "body": json.dumps({"jobId": job_id})
     }
 
 def get_status(event):
@@ -56,11 +92,10 @@ def get_status(event):
     Checks the status of a conversion job.
     """
     job_id = event["pathParameters"].get("job_id")
-    # This is where the logic to check the status of the job will go.
-    # For now, we'll just return a dummy status.
+    status = JOB_STATUS.get(job_id, {}).get("status", "not_found")
     return {
         "statusCode": 200,
-        "body": json.dumps({"jobId": job_id, "status": "completed"})
+        "body": json.dumps({"jobId": job_id, "status": status})
     }
 
 def get_download_url(event):
@@ -70,7 +105,8 @@ def get_download_url(event):
     s3 = boto3.client("s3")
     bucket_name = os.environ.get("CONVERSIONS_BUCKET")
     job_id = event["pathParameters"].get("job_id")
-    file_name = f"{job_id}.stl" # Assuming the output format is always STL for now
+    target_format = JOB_STATUS.get(job_id, {}).get("target_format", "stl")
+    file_name = f"{job_id}.{target_format}"
     
     presigned_url = s3.generate_presigned_url(
         "get_object",
