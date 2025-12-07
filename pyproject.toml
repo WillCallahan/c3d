@@ -23,6 +23,8 @@ mypy = "*"
 pre-commit = "*"
 pyinstaller = "*"
 boto3 = "*"
+boto3-stubs = "*"
+black = "*"
 
 [tool.poetry.scripts]
 c3d = "backend.c3d.main:main"
