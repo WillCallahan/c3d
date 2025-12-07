@@ -45,17 +45,30 @@ def convert_with_cadquery(
             f"Unsupported input format for CadQuery: {get_file_extension(input_file)}"
         )
 
-    shape = importer(input_file)
-    if shape is None:
+    print(f"Importing {input_file}...")
+    workplane = importer(input_file)
+    if workplane is None:
         raise ValueError(f"No shape found in {input_file}")
-
-    cq.exporters.export(
-        shape,
-        output_file,
-        exportType=export_format,
-        tolerance=linear_deflection,
-        angularTolerance=angular_deflection,
-    )
+    
+    print(f"Workplane imported, type: {type(workplane)}")
+    
+    # Extract the actual shape from the Workplane
+    shape = workplane.val() if hasattr(workplane, 'val') else workplane
+    print(f"Shape extracted, type: {type(shape)}")
+    print(f"Exporting to {output_file} as {export_format}...")
+    
+    try:
+        cq.exporters.export(
+            shape,
+            output_file,
+            exportType=export_format,
+            tolerance=linear_deflection,
+            angularTolerance=angular_deflection,
+        )
+        print(f"Export completed, checking file...")
+    except Exception as e:
+        print(f"Export failed with error: {e}")
+        raise
 
 
 def convert_with_trimesh(input_file: str, output_file: str):

@@ -13,20 +13,30 @@ CORS_HEADERS = {
 }
 
 def handler(event, context):
+    print(f"Event: {json.dumps(event)}")
     path = event.get("path", "")
     method = event.get("httpMethod", "")
+    print(f"Path: {path}, Method: {method}")
     
-    if method == "OPTIONS":
-        return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
-    
-    if path == "/upload-url" and method == "POST":
-        return get_upload_url(event)
-    elif path.startswith("/status/") and method == "GET":
-        return get_status(event)
-    elif path.startswith("/download-url/") and method == "GET":
-        return get_download_url(event)
-    
-    return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"message": "Not Found"})}
+    try:
+        if method == "OPTIONS":
+            return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
+        
+        if path == "/upload-url" and method == "POST":
+            result = get_upload_url(event)
+            print(f"Result: {json.dumps(result)}")
+            return result
+        elif path.startswith("/status/") and method == "GET":
+            return get_status(event)
+        elif path.startswith("/download-url/") and method == "GET":
+            return get_download_url(event)
+        
+        return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"message": "Not Found"})}
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"statusCode": 500, "headers": CORS_HEADERS, "body": json.dumps({"message": str(e)})}
 
 def get_upload_url(event):
     body = json.loads(event["body"])
