@@ -2,11 +2,15 @@ import boto3
 import os
 import json
 import uuid
-import time
 
 s3 = boto3.client("s3")
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(os.environ["JOBS_TABLE"])
+
+CORS_HEADERS = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+}
 
 def handler(event, context):
     path = event.get("path", "")
@@ -14,132 +18,75 @@ def handler(event, context):
     
     if path == "/upload-url" and method == "POST":
         return get_upload_url(event)
-    elif path == "/convert" and method == "POST":
-        return initiate_conversion(event)
     elif path.startswith("/status/") and method == "GET":
         return get_status(event)
     elif path.startswith("/download-url/") and method == "GET":
         return get_download_url(event)
     
-    return {
-        "statusCode": 404,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"message": "Not Found"})
-    }
+    return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"message": "Not Found"})}
 
 def get_upload_url(event):
     body = json.loads(event["body"])
     file_name = body.get("fileName")
+    target_format = body.get("targetFormat", "stl")
     
     if not file_name:
-        return {
-            "statusCode": 400,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({"message": "fileName is required"})
-        }
+        return {"statusCode": 400, "headers": CORS_HEADERS, "body": json.dumps({"message": "fileName required"})}
     
     job_id = str(uuid.uuid4())
     key = f"{job_id}/{file_name}"
     
     presigned_url = s3.generate_presigned_url(
         "put_object",
-        Params={"Bucket": os.environ["UPLOADS_BUCKET"], "Key": key},
-        ExpiresIn=3600,
+        Params={
+            "Bucket": os.environ["UPLOADS_BUCKET"],
+            "Key": key,
+            "Metadata": {"status": "pending", "targetformat": target_format}
+        },
+        ExpiresIn=3600
     )
     
-    table.put_item(Item={
-        "jobId": job_id,
-        "status": "pending",
-        "fileName": file_name,
-        "s3Key": key,
-        "createdAt": int(time.time()),
-        "ttl": int(time.time()) + 86400
-    })
-    
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"uploadUrl": presigned_url, "jobId": job_id})
-    }
-
-def initiate_conversion(event):
-    body = json.loads(event["body"])
-    job_id = body.get("jobId")
-    target_format = body.get("targetFormat", "stl")
-    
-    if not job_id:
-        return {
-            "statusCode": 400,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({"message": "jobId is required"})
-        }
-    
-    table.update_item(
-        Key={"jobId": job_id},
-        UpdateExpression="SET #status = :status, targetFormat = :format",
-        ExpressionAttributeNames={"#status": "status"},
-        ExpressionAttributeValues={":status": "queued", ":format": target_format}
-    )
-    
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"jobId": job_id, "status": "queued"})
-    }
+    return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps({"uploadUrl": presigned_url, "jobId": job_id})}
 
 def get_status(event):
     job_id = event["pathParameters"]["job_id"]
     
-    response = table.get_item(Key={"jobId": job_id})
-    item = response.get("Item")
-    
-    if not item:
-        return {
-            "statusCode": 404,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({"message": "Job not found"})
-        }
-    
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({
-            "jobId": job_id,
-            "status": item["status"],
-            "fileName": item.get("fileName"),
-            "error": item.get("error")
-        })
-    }
+    try:
+        uploads_key = None
+        for obj in s3.list_objects_v2(Bucket=os.environ["UPLOADS_BUCKET"], Prefix=f"{job_id}/").get("Contents", []):
+            uploads_key = obj["Key"]
+            break
+        
+        if uploads_key:
+            meta = s3.head_object(Bucket=os.environ["UPLOADS_BUCKET"], Key=uploads_key)
+            status = meta.get("Metadata", {}).get("status", "processing")
+            error = meta.get("Metadata", {}).get("error")
+            return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps({"jobId": job_id, "status": status, "error": error})}
+        
+        conversions_key = f"{job_id}.stl"
+        try:
+            s3.head_object(Bucket=os.environ["CONVERSIONS_BUCKET"], Key=conversions_key)
+            return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps({"jobId": job_id, "status": "completed"})}
+        except:
+            pass
+        
+        return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"message": "Job not found"})}
+    except Exception as e:
+        return {"statusCode": 500, "headers": CORS_HEADERS, "body": json.dumps({"message": str(e)})}
 
 def get_download_url(event):
     job_id = event["pathParameters"]["job_id"]
     
-    response = table.get_item(Key={"jobId": job_id})
-    item = response.get("Item")
-    
-    if not item:
-        return {
-            "statusCode": 404,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({"message": "Job not found"})
-        }
-    
-    if item["status"] != "completed":
-        return {
-            "statusCode": 400,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({"message": "Conversion not completed"})
-        }
-    
-    output_key = item.get("outputKey")
-    presigned_url = s3.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": os.environ["CONVERSIONS_BUCKET"], "Key": output_key},
-        ExpiresIn=3600,
-    )
-    
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"downloadUrl": presigned_url})
-    }
+    try:
+        conversions_key = f"{job_id}.stl"
+        s3.head_object(Bucket=os.environ["CONVERSIONS_BUCKET"], Key=conversions_key)
+        
+        presigned_url = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": os.environ["CONVERSIONS_BUCKET"], "Key": conversions_key},
+            ExpiresIn=3600
+        )
+        
+        return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps({"downloadUrl": presigned_url})}
+    except:
+        return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"message": "File not ready"})}

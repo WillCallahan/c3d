@@ -1,105 +1,100 @@
-# step-to-stl: 3D File Conversion Utility
+# c3d: The Universal 3D File Converter
 
-`step-to-stl` is a command-line tool for converting 3D files from one format to another.
+`c3d` (Convert 3D) is a powerful and versatile cloud-based platform designed for seamless conversion of various 3D file formats. Our service allows users to easily convert between popular formats like STEP, STL, OBJ, and 3MF, providing a smooth experience for engineers, designers, and hobbyists.
 
-## Project Requirements
+## Features
 
-The detailed requirements for this project are split into two phases:
+*   **Broad Format Support**: Convert between a wide range of 3D file types including, but not limited to, STEP, STL, OBJ, and 3MF.
+*   **Intuitive Web Interface**: Drag-and-drop multiple files for instant conversion.
+*   **Automatic Format Detection**: Smartly infers source file formats from file extensions.
+*   **Real-time Progress Monitoring**: Track the status of each conversion with live updates and progress bars.
+*   **Secure & Scalable Cloud Backend**: Leverage a robust AWS-powered backend for fast and reliable conversions, ensuring data security.
+*   **Light & Dark Mode**: A modern and visually appealing user interface with theme toggling.
+*   **SEO Optimized**: Designed for discoverability and semantic friendliness.
 
--   [Phase I: Command-Line Tool](./docs/REQUIREMENTS-PHASE-I.md)
--   [Phase II: Cloud-Based Service](./docs/REQUIREMENTS-PHASE-II.md)
+## Supported Formats
 
-## Installation
+### Input Formats
 
-### From PyPI
+*   STEP (.step, .stp)
+*   STL (.stl)
+*   OBJ (.obj)
+*   3MF (.3mf)
+*   IGES (.iges, .igs) - *Note: IGES files are converted to an intermediate format (like STEP or STL) before final conversion to the target format.*
 
-```bash
-pip install step-to-stl
-```
+### Output Formats
 
-### From Homebrew (macOS)
+*   STEP (.step, .stp)
+*   STL (.stl)
+*   OBJ (.obj)
+*   3MF (.3mf)
 
-```bash
-brew install <YOUR-USERNAME>/step-to-stl/step-to-stl
-```
+## Getting Started (Web Application)
 
-### From Winget (Windows)
+To run the `c3d` web application locally:
 
-```bash
-winget install YourName.step-to-stl
-```
+### Prerequisites
 
-### From source
+*   Node.js (LTS version recommended)
+*   npm or yarn
+*   Python 3.9+
+*   Poetry (for Python dependency management)
+*   AWS CLI configured with credentials to deploy resources
 
-1.  **Clone the repository:**
+### Frontend Setup
+
+1.  Navigate to the `frontend` directory:
     ```bash
-    git clone https://github.com/<YOUR-USERNAME>/step-to-stl.git
-    cd step-to-stl
+    cd frontend
     ```
-
-2.  **Install in editable mode:**
+2.  Install dependencies:
     ```bash
-    pip install -e .
+    npm install
+    # or yarn install
     ```
+3.  Start the development server:
+    ```bash
+    npm run dev
+    # or yarn dev
+    ```
+    The frontend will be available at `http://localhost:5173`.
 
-## Usage
+### Backend Setup (AWS Serverless)
 
-```bash
-c3d <input_file(s)> <output_directory> [options]
-```
+The backend is an AWS Serverless application. You will need to deploy it to your AWS account.
 
-### Example
+1.  Navigate to the `backend` directory:
+    ```bash
+    cd backend
+    ```
+2.  Install Python dependencies using Poetry:
+    ```bash
+    poetry install
+    ```
+3.  Build the Serverless application:
+    ```bash
+    sam build
+    ```
+4.  Deploy the application to AWS:
+    ```bash
+    sam deploy --guided
+    ```
+    Follow the prompts to configure your deployment. This will create S3 buckets and API Gateway endpoints. Note down the API Gateway endpoint URL.
 
-Convert a single file:
-```bash
-c3d my_model.step my_model.stl
-```
+### Connecting Frontend to Backend
 
-Convert multiple files using a glob pattern:
-```bash
-c3d "models/*.step" output_directory/
-```
+After deploying the backend, update the `axios` base URL in the frontend to point to your deployed API Gateway endpoint. This usually involves setting up environment variables in your frontend project (e.g., in a `.env` file).
 
-### Note on IGES format
-This tool does not directly support IGES files. It is recommended to convert IGES files to a supported format like STEP or STL before using this tool.
+## Project Structure
 
-### Options
+*   `frontend/`: Contains the React web application.
+*   `backend/`: Contains the AWS Serverless application (Python Lambda functions).
+*   `docs/`: Project documentation and requirements.
 
--   `--input_format`: Input file format (e.g., 'step', 'stl').
--   `--output_format`: Output file format (e.g., 'step', 'stl').
--   `--lin_deflection`: Linear deflection for meshing (tolerance). Default is `0.001`.
--   `--ang_deflection`: Angular deflection for meshing. Default is `0.1`.
--   `--version`: Display the version of the tool.
+## Contribution
 
-#### Example with options
+We welcome contributions! Please see our `CONTRIBUTING.md` for more details.
 
-```bash
-c3d my_model.step my_model.stl --lin_deflection 0.01 --ang_deflection 0.2
-```
+## License
 
-## Distribution
-
-This project is set up for automated releases to PyPI, Homebrew, and Winget.
-
-### PyPI
-
-Publishing to PyPI is automated via the `release.yaml` GitHub Actions workflow. This workflow triggers when a new tag is pushed to the repository.
-
-### Homebrew
-
-The Homebrew formula is located at `dist/c3d.rb`. To make this work, you need to:
-
-1.  Create a new public GitHub repository named `homebrew-c3d`.
-2.  Create a `Formula` directory inside this repository.
-3.  Copy the `dist/c3d.rb` file to the `Formula` directory in your `homebrew-c3d` repository.
-4.  Update the `url` and `sha256` fields in the formula with the correct values from your GitHub release.
-
-### Winget
-
-The Winget manifest is located at `dist/c3d.yaml`. To publish to Winget, you need to:
-
-1.  Fork the [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) repository.
-2.  Create a new directory structure in your fork under the `manifests` directory: `manifests/y/YourName/c3d/0.1.0`.
-3.  Copy the `dist/c3d.yaml` file into this new directory.
-4.  Update the `InstallerUrl` and `InstallerSha256` fields with the correct values from your GitHub release.
-5.  Create a pull request to the `microsoft/winget-pkgs` repository.
+This project is licensed under the MIT License.
