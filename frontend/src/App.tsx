@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
-import styled from 'styled-components';
+import styled, { ThemeProvider } from 'styled-components';
 import { motion } from 'framer-motion';
+import { lightTheme, darkTheme } from './theme';
+import { useDarkMode } from './useDarkMode';
 
 const App = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -11,6 +13,7 @@ const App = () => {
   const [conversionStatus, setConversionStatus] = useState<string>('');
   const [downloadUrl, setDownloadUrl] = useState<string>('');
   const [jobId, setJobId] = useState<string>('');
+  const [theme, toggleTheme] = useDarkMode();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(acceptedFiles);
@@ -76,76 +79,81 @@ const App = () => {
     }
   };
 
+  const themeMode = theme === 'light' ? lightTheme : darkTheme;
+
   return (
-    <AppContainer>
-      <Header>
-        <h1>3D File Converter</h1>
-      </Header>
-      <ConverterContainer>
-        <DropzoneContainer
-          {...getRootProps()}
-          isDragActive={isDragActive}
-          as={motion.div}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <input {...getInputProps()} />
-          {files.length > 0 ? (
-            <p>{files.map((file) => file.name).join(', ')}</p>
-          ) : (
-            <p>Drag 'n' drop some files here, or click to select files</p>
+    <ThemeProvider theme={themeMode}>
+      <AppContainer>
+        <Header>
+          <h1>3D File Converter</h1>
+          <button onClick={toggleTheme}>Toggle Theme</button>
+        </Header>
+        <ConverterContainer>
+          <DropzoneContainer
+            {...getRootProps()}
+            isDragActive={isDragActive}
+            as={motion.div}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <input {...getInputProps()} />
+            {files.length > 0 ? (
+              <p>{files.map((file) => file.name).join(', ')}</p>
+            ) : (
+              <p>Drag 'n' drop some files here, or click to select files</p>
+            )}
+          </DropzoneContainer>
+          <OptionsContainer>
+            <SelectContainer>
+              <label>From</label>
+              <select
+                value={sourceFormat}
+                onChange={(e) => setSourceFormat(e.target.value)}
+              >
+                <option value="step">STEP</option>
+                <option value="stp">STP</option>
+                <option value="obj">OBJ</option>
+                <option value="3mf">3MF</option>
+              </select>
+            </SelectContainer>
+            <SelectContainer>
+              <label>To</label>
+              <select
+                value={targetFormat}
+                onChange={(e) => setTargetFormat(e.target.value)}
+              >
+                <option value="stl">STL</option>
+                <option value="step">STEP</option>
+                <option value="stp">STP</option>
+                <option value="obj">OBJ</option>
+                <option value="3mf">3MF</option>
+              </select>
+            </SelectContainer>
+          </OptionsContainer>
+          <ConvertButton
+            onClick={handleConvert}
+            disabled={
+              conversionStatus.startsWith('Converting') ||
+              conversionStatus.startsWith('Waiting')
+            }
+            as={motion.button}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Convert
+          </ConvertButton>
+          {conversionStatus && <StatusText>{conversionStatus}</StatusText>}
+          {downloadUrl && (
+            <DownloadLink href={downloadUrl} download>
+              Download Converted File
+            </DownloadLink>
           )}
-        </DropzoneContainer>
-        <OptionsContainer>
-          <SelectContainer>
-            <label>From</label>
-            <select
-              value={sourceFormat}
-              onChange={(e) => setSourceFormat(e.target.value)}
-            >
-              <option value="step">STEP</option>
-              <option value="stp">STP</option>
-              <option value="obj">OBJ</option>
-              <option value="3mf">3MF</option>
-            </select>
-          </SelectContainer>
-          <SelectContainer>
-            <label>To</label>
-            <select
-              value={targetFormat}
-              onChange={(e) => setTargetFormat(e.target.value)}
-            >
-              <option value="stl">STL</option>
-              <option value="step">STEP</option>
-              <option value="stp">STP</option>
-              <option value="obj">OBJ</option>
-              <option value="3mf">3MF</option>
-            </select>
-          </SelectContainer>
-        </OptionsContainer>
-        <ConvertButton
-          onClick={handleConvert}
-          disabled={
-            conversionStatus.startsWith('Converting') ||
-            conversionStatus.startsWith('Waiting')
-          }
-          as={motion.button}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Convert
-        </ConvertButton>
-        {conversionStatus && <StatusText>{conversionStatus}</StatusText>}
-        {downloadUrl && (
-          <DownloadLink href={downloadUrl} download>
-            Download Converted File
-          </DownloadLink>
-        )}
-      </ConverterContainer>
-      <AdContainer>
-        {/* Placeholder for Google AdSense */}
-      </AdContainer>
-    </AppContainer>
+        </ConverterContainer>
+        <AdContainer>
+          {/* Placeholder for Google AdSense */}
+        </AdContainer>
+      </AppContainer>
+    </ThemeProvider>
   );
 };
 
@@ -155,15 +163,17 @@ const AppContainer = styled.div`
   align-items: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
-  background-color: #f7f8fc;
+  background-color: ${({ theme }) => theme.body};
+  color: ${({ theme }) => theme.text};
   min-height: 100vh;
+  transition: all 0.25s linear;
 `;
 
 const Header = styled.header`
   width: 100%;
   padding: 2rem;
   text-align: center;
-  background-color: #fff;
+  background-color: transparent;
   border-bottom: 1px solid #e6e6e6;
 `;
 
@@ -172,9 +182,8 @@ const ConverterContainer = styled.div`
   flex-direction: column;
   align-items: center;
   padding: 2rem;
-  background-color: #fff;
+  background-color: transparent;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   margin-top: 2rem;
   width: 100%;
   max-width: 500px;
@@ -190,6 +199,7 @@ const DropzoneContainer = styled.div<{ isDragActive: boolean }>`
   border-radius: 8px;
   cursor: pointer;
   transition: border-color 0.2s;
+  background-color: ${({ theme }) => theme.body};
 `;
 
 const OptionsContainer = styled.div`
@@ -208,7 +218,7 @@ const SelectContainer = styled.div`
   label {
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-    color: #555;
+    color: ${({ theme }) => theme.text};
   }
 
   select {
@@ -216,6 +226,8 @@ const SelectContainer = styled.div`
     padding: 0.5rem;
     border-radius: 4px;
     border: 1px solid #ccc;
+    background-color: ${({ theme }) => theme.body};
+    color: ${({ theme }) => theme.text};
   }
 `;
 
@@ -261,9 +273,7 @@ const AdContainer = styled.div`
   max-width: 500px;
   margin-top: 2rem;
   padding: 1rem;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: transparent;
   text-align: center;
 `;
 
