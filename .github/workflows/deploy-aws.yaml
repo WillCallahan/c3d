@@ -1,0 +1,83 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Set up AWS SAM
+        uses: aws-actions/setup-sam@v2
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: SAM build
+        run: sam build
+      
+      - name: SAM deploy
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+      
+      - name: Get stack outputs
+        id: stack-outputs
+        run: |
+          echo "api_endpoint=$(aws cloudformation describe-stacks --stack-name c3d-stack --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' --output text)" >> $GITHUB_OUTPUT
+          echo "frontend_bucket=$(aws cloudformation describe-stacks --stack-name c3d-stack --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' --output text)" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName==\`$(aws cloudformation describe-stacks --stack-name c3d-stack --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' --output text).s3.amazonaws.com\`].Id" --output text)" >> $GITHUB_OUTPUT
+    
+    outputs:
+      api_endpoint: ${{ steps.stack-outputs.outputs.api_endpoint }}
+      frontend_bucket: ${{ steps.stack-outputs.outputs.frontend_bucket }}
+      cloudfront_id: ${{ steps.stack-outputs.outputs.cloudfront_id }}
+
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_ENDPOINT: ${{ needs.deploy-backend.outputs.api_endpoint }}
+      
+      - name: Deploy to S3
+        run: aws s3 sync frontend/dist/ s3://${{ needs.deploy-backend.outputs.frontend_bucket }}/ --delete
+      
+      - name: Invalidate CloudFront
+        if: needs.deploy-backend.outputs.cloudfront_id != ''
+        run: aws cloudfront create-invalidation --distribution-id ${{ needs.deploy-backend.outputs.cloudfront_id }} --paths '/*'

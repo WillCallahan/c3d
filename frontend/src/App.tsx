@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import styled, { ThemeProvider } from 'styled-components';
@@ -31,11 +31,6 @@ const heroStats = [
     label: 'Core CAD formats',
     detail: 'STEP / STL / OBJ / 3MF',
   },
-  {
-    value: '45s',
-    label: 'Avg runtime',
-    detail: 'p95 across recent jobs',
-  },
 ];
 
 const usageTrend = [
@@ -62,8 +57,17 @@ const App = () => {
     setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
   }, []);
 
+  const tableRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToTable = () => {
+    tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    onDrop,
+    onDrop(fileList) {
+      onDrop(fileList);
+      requestAnimationFrame(scrollToTable);
+    },
   });
 
   const getSourceFormat = (fileName: string) => {
@@ -311,7 +315,6 @@ const App = () => {
                     Keep everything in one compact board with instant feedback.
                   </PanelSubtitle>
                 </div>
-                <PanelBadge>Realtime</PanelBadge>
               </PanelHeader>
 
               <DropRow>
@@ -406,7 +409,7 @@ const App = () => {
                   </EmptyCopy>
                 </EmptyState>
               ) : (
-                <FileTableWrapper>
+                <FileTableWrapper ref={tableRef}>
                   <StyledTable>
                     <thead>
                       <tr>
@@ -823,14 +826,6 @@ const PanelTitle = styled.h2`
 const PanelSubtitle = styled.p`
   margin: 0.3rem 0 0;
   color: ${({ theme }) => theme.muted};
-`;
-
-const PanelBadge = styled.span`
-  padding: 0.35rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  background: ${({ theme }) => theme.primarySoft};
-  color: ${({ theme }) => theme.primary};
 `;
 
 const DropRow = styled.div`

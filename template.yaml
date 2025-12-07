@@ -1,0 +1,204 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: C3D - 3D File Conversion Service
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        JOBS_TABLE: !Ref JobsTable
+        UPLOADS_BUCKET: !Ref UploadsBucket
+        CONVERSIONS_BUCKET: !Ref ConversionsBucket
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+      AllowOrigin: "'*'"
+
+Resources:
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldUploads
+            Status: Enabled
+            ExpirationInDays: 1
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [PUT, POST]
+            AllowedHeaders: ['*']
+  
+  ConversionsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldConversions
+            Status: Enabled
+            ExpirationInDays: 7
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [GET]
+            AllowedHeaders: ['*']
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}
+
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-OAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig: {}
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  JobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: jobId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: jobId
+          KeyType: HASH
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: ttl
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/c3d/
+      Handler: app.handler
+      Timeout: 300
+      MemorySize: 3008
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
+        - S3ReadPolicy:
+            BucketName: !Ref ConversionsBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JobsTable
+      Events:
+        UploadUrl:
+          Type: Api
+          Properties:
+            Path: /upload-url
+            Method: post
+        Convert:
+          Type: Api
+          Properties:
+            Path: /convert
+            Method: post
+        Status:
+          Type: Api
+          Properties:
+            Path: /status/{job_id}
+            Method: get
+        DownloadUrl:
+          Type: Api
+          Properties:
+            Path: /download-url/{job_id}
+            Method: get
+
+  ConversionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/c3d/
+      Handler: converter.handler
+      Timeout: 900
+      MemorySize: 10240
+      EphemeralStorage:
+        Size: 10240
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref UploadsBucket
+        - S3CrudPolicy:
+            BucketName: !Ref ConversionsBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JobsTable
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref UploadsBucket
+            Events: s3:ObjectCreated:*
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+  CloudFrontUrl:
+    Description: CloudFront distribution URL
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  FrontendBucket:
+    Description: S3 bucket for frontend hosting
+    Value: !Ref FrontendBucket
+  UploadsBucket:
+    Description: S3 bucket for file uploads
+    Value: !Ref UploadsBucket
+  ConversionsBucket:
+    Description: S3 bucket for converted files
+    Value: !Ref ConversionsBucket
+  JobsTable:
+    Description: DynamoDB table for job tracking
+    Value: !Ref JobsTable

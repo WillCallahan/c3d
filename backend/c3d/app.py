@@ -2,119 +2,144 @@ import boto3
 import os
 import json
 import uuid
-from main import convert
+import time
 
-JOB_STATUS = {}
+s3 = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table(os.environ["JOBS_TABLE"])
 
 def handler(event, context):
-    """
-    This function handles the API Gateway requests.
-    """
-    route_key = event.get("routeKey")
-    if route_key == "POST /upload-url":
+    path = event.get("path", "")
+    method = event.get("httpMethod", "")
+    
+    if path == "/upload-url" and method == "POST":
         return get_upload_url(event)
-    elif route_key == "POST /convert":
-        return convert_file(event)
-    elif route_key == "GET /status/{job_id}":
+    elif path == "/convert" and method == "POST":
+        return initiate_conversion(event)
+    elif path.startswith("/status/") and method == "GET":
         return get_status(event)
-    elif route_key == "GET /download-url/{job_id}":
+    elif path.startswith("/download-url/") and method == "GET":
         return get_download_url(event)
-    else:
-        return {
-            "statusCode": 404,
-            "body": json.dumps({"message": "Not Found"})
-        }
+    
+    return {
+        "statusCode": 404,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"message": "Not Found"})
+    }
 
 def get_upload_url(event):
-    """
-    Generates a pre-signed S3 URL for securely uploading a source file.
-    """
-    s3 = boto3.client("s3")
-    bucket_name = os.environ.get("UPLOADS_BUCKET")
-    file_name = json.loads(event["body"]).get("fileName")
+    body = json.loads(event["body"])
+    file_name = body.get("fileName")
+    
+    if not file_name:
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "fileName is required"})
+        }
+    
+    job_id = str(uuid.uuid4())
+    key = f"{job_id}/{file_name}"
     
     presigned_url = s3.generate_presigned_url(
         "put_object",
-        Params={"Bucket": bucket_name, "Key": file_name},
+        Params={"Bucket": os.environ["UPLOADS_BUCKET"], "Key": key},
         ExpiresIn=3600,
+    )
+    
+    table.put_item(Item={
+        "jobId": job_id,
+        "status": "pending",
+        "fileName": file_name,
+        "s3Key": key,
+        "createdAt": int(time.time()),
+        "ttl": int(time.time()) + 86400
+    })
+    
+    return {
+        "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"uploadUrl": presigned_url, "jobId": job_id})
+    }
+
+def initiate_conversion(event):
+    body = json.loads(event["body"])
+    job_id = body.get("jobId")
+    target_format = body.get("targetFormat", "stl")
+    
+    if not job_id:
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "jobId is required"})
+        }
+    
+    table.update_item(
+        Key={"jobId": job_id},
+        UpdateExpression="SET #status = :status, targetFormat = :format",
+        ExpressionAttributeNames={"#status": "status"},
+        ExpressionAttributeValues={":status": "queued", ":format": target_format}
     )
     
     return {
         "statusCode": 200,
-        "body": json.dumps({"uploadUrl": presigned_url})
-    }
-
-def convert_file(event):
-    """
-    Initiates a conversion job.
-    """
-    s3 = boto3.client("s3")
-    uploads_bucket = os.environ.get("UPLOADS_BUCKET")
-    conversions_bucket = os.environ.get("CONVERSIONS_BUCKET")
-    
-    body = json.loads(event["body"])
-    file_name = body.get("fileName")
-    source_format = body.get("sourceFormat")
-    target_format = body.get("targetFormat")
-    
-    job_id = str(uuid.uuid4())
-    JOB_STATUS[job_id] = {"status": "processing", "target_format": target_format}
-    
-    input_file = f"/tmp/{file_name}"
-    output_file = f"/tmp/{job_id}.{target_format}"
-    
-    s3.download_file(uploads_bucket, file_name, input_file)
-    
-    try:
-        convert(input_file, output_file, input_format=source_format, output_format=target_format)
-        s3.upload_file(output_file, conversions_bucket, f"{job_id}.{target_format}")
-        JOB_STATUS[job_id]["status"] = "completed"
-    except Exception as e:
-        print(f"Conversion failed: {e}")
-        JOB_STATUS[job_id]["status"] = "failed"
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"message": "Conversion failed"})
-        }
-    finally:
-        if os.path.exists(input_file):
-            os.remove(input_file)
-        if os.path.exists(output_file):
-            os.remove(output_file)
-            
-    return {
-        "statusCode": 200,
-        "body": json.dumps({"jobId": job_id})
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"jobId": job_id, "status": "queued"})
     }
 
 def get_status(event):
-    """
-    Checks the status of a conversion job.
-    """
-    job_id = event["pathParameters"].get("job_id")
-    status = JOB_STATUS.get(job_id, {}).get("status", "not_found")
+    job_id = event["pathParameters"]["job_id"]
+    
+    response = table.get_item(Key={"jobId": job_id})
+    item = response.get("Item")
+    
+    if not item:
+        return {
+            "statusCode": 404,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "Job not found"})
+        }
+    
     return {
         "statusCode": 200,
-        "body": json.dumps({"jobId": job_id, "status": status})
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({
+            "jobId": job_id,
+            "status": item["status"],
+            "fileName": item.get("fileName"),
+            "error": item.get("error")
+        })
     }
 
 def get_download_url(event):
-    """
-    Generates a pre-signed S3 URL for downloading the converted file.
-    """
-    s3 = boto3.client("s3")
-    bucket_name = os.environ.get("CONVERSIONS_BUCKET")
-    job_id = event["pathParameters"].get("job_id")
-    target_format = JOB_STATUS.get(job_id, {}).get("target_format", "stl")
-    file_name = f"{job_id}.{target_format}"
+    job_id = event["pathParameters"]["job_id"]
     
+    response = table.get_item(Key={"jobId": job_id})
+    item = response.get("Item")
+    
+    if not item:
+        return {
+            "statusCode": 404,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "Job not found"})
+        }
+    
+    if item["status"] != "completed":
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "Conversion not completed"})
+        }
+    
+    output_key = item.get("outputKey")
     presigned_url = s3.generate_presigned_url(
         "get_object",
-        Params={"Bucket": bucket_name, "Key": file_name},
+        Params={"Bucket": os.environ["CONVERSIONS_BUCKET"], "Key": output_key},
         ExpiresIn=3600,
     )
     
     return {
         "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
         "body": json.dumps({"downloadUrl": presigned_url})
     }

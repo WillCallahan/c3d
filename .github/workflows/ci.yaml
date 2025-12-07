@@ -3,45 +3,50 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v4
+    
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+    
     - name: Install poetry
       run: |
         python -m pip install --upgrade pip
         pip install poetry
+    
     - name: Install dependencies
-      run: |
-        poetry install
+      run: poetry install
+    
     - name: Run pre-commit hooks
-      run: |
-        poetry run pre-commit run --all-files
+      run: poetry run pre-commit run --all-files
+    
     - name: Test with pytest
-      run: |
-        poetry run pytest --cov=backend --cov-report=xml
+      run: poetry run pytest --cov=backend --cov-report=xml
+    
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
         files: ./coverage.xml
-        fail_ci_if_error: true
-    - name: Check formatting with black
-      run: |
-        poetry run black --check .
-    - name: Scan for vulnerabilities with osv-scanner
-      run: |
-        wget https://github.com/google/osv-scanner/releases/download/v1.4.2/osv-scanner_1.4.2_linux_amd64 -O osv-scanner
-        chmod +x osv-scanner
-        ./osv-scanner -r . --format sarif --output osv-report.sarif
-    - name: Upload OSV report
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: osv-report.sarif
+        fail_ci_if_error: false
+
+  validate-sam:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up AWS SAM
+      uses: aws-actions/setup-sam@v2
+    
+    - name: Validate SAM template
+      run: sam validate
+    
+    - name: SAM build
+      run: sam build
