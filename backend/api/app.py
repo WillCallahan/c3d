@@ -16,6 +16,9 @@ def handler(event, context):
     path = event.get("path", "")
     method = event.get("httpMethod", "")
     
+    if method == "OPTIONS":
+        return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
+    
     if path == "/upload-url" and method == "POST":
         return get_upload_url(event)
     elif path.startswith("/status/") and method == "GET":
@@ -41,7 +44,7 @@ def get_upload_url(event):
         Params={
             "Bucket": os.environ["UPLOADS_BUCKET"],
             "Key": key,
-            "Metadata": {"status": "pending", "targetformat": target_format}
+            "Metadata": {"targetformat": target_format}
         },
         ExpiresIn=3600
     )

@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
 
 COPY app.py converter.py ${LAMBDA_TASK_ROOT}/
 
-CMD ["app.handler"]
+CMD ["converter.handler"]

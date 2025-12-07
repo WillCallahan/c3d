@@ -9,11 +9,11 @@ manifest_hash = "d65c6464f23014e122045fecea8fd91b"
 packagetype = "Zip"
 functions = ["ApiFunction"]
 
-[function_build_definitions.1b5e5f8e-a373-44dc-81e5-13cfdd8fd4f0]
+[function_build_definitions.bec20501-22ca-4973-bd5f-d99001956b69]
 packagetype = "Image"
 functions = ["ConversionFunction"]
 
-[function_build_definitions.1b5e5f8e-a373-44dc-81e5-13cfdd8fd4f0.metadata]
+[function_build_definitions.bec20501-22ca-4973-bd5f-d99001956b69.metadata]
 DockerTag = "python3.12-v1"
 DockerContext = "/Users/william/git/step_to_stl/backend/c3d"
 Dockerfile = "Dockerfile"

@@ -24,16 +24,29 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      IntelligentTieringConfigurations:
+        - Id: EntireBucket
+          Status: Enabled
+          Tierings:
+            - AccessTier: ARCHIVE_ACCESS
+              Days: 90
+            - AccessTier: DEEP_ARCHIVE_ACCESS
+              Days: 180
       LifecycleConfiguration:
         Rules:
           - Id: DeleteOldUploads
             Status: Enabled
-            ExpirationInDays: 1
+            ExpirationInDays: 7
       CorsConfiguration:
         CorsRules:
-          - AllowedOrigins: ['*']
-            AllowedMethods: [PUT, POST]
+          - AllowedOrigins: 
+              - !Sub 'https://${CloudFrontDistribution.DomainName}'
+              - 'https://the3dconverter.com'
+              - 'https://www.the3dconverter.com'
+              - 'http://localhost:5173'
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
             AllowedHeaders: ['*']
+            ExposedHeaders: [ETag]
   
   ConversionsBucket:
     Type: AWS::S3::Bucket
@@ -42,16 +55,29 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      IntelligentTieringConfigurations:
+        - Id: EntireBucket
+          Status: Enabled
+          Tierings:
+            - AccessTier: ARCHIVE_ACCESS
+              Days: 90
+            - AccessTier: DEEP_ARCHIVE_ACCESS
+              Days: 180
       LifecycleConfiguration:
         Rules:
           - Id: DeleteOldConversions
             Status: Enabled
-            ExpirationInDays: 1
+            ExpirationInDays: 7
       CorsConfiguration:
         CorsRules:
-          - AllowedOrigins: ['*']
-            AllowedMethods: [GET]
+          - AllowedOrigins: 
+              - !Sub 'https://${CloudFrontDistribution.DomainName}'
+              - 'https://the3dconverter.com'
+              - 'https://www.the3dconverter.com'
+              - 'http://localhost:5173'
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
             AllowedHeaders: ['*']
+            ExposedHeaders: [ETag]
 
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -154,6 +180,7 @@ Resources:
   ConversionFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Description: 3D file conversion Lambda function v2
       PackageType: Image
       Timeout: 900
       MemorySize: 1024
@@ -183,22 +210,12 @@ Resources:
       DockerContext: ./backend/c3d
       Dockerfile: Dockerfile
 
-  ConversionFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref ConversionFunction
-      Action: lambda:InvokeFunction
-      Principal: s3.amazonaws.com
-      SourceArn: !Sub arn:aws:s3:::${UploadsBucket}
-
   S3InvokeLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt ConversionFunction.Arn
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !GetAtt UploadsBucket.Arn
 
 Outputs:
   ApiEndpoint:

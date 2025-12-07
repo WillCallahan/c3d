@@ -105,7 +105,6 @@ const App = () => {
     }
 
     for (const file of files) {
-      const sourceFormat = getSourceFormat(file.name);
       setConversionStatus((prev) => ({
         ...prev,
         [file.name]: 'Preparing upload...',
@@ -113,10 +112,11 @@ const App = () => {
       setProgress((prev) => ({ ...prev, [file.name]: 0 }));
 
       try {
-        const uploadUrlResponse = await axios.post('/api/upload-url', {
+        const uploadUrlResponse = await axios.post('/upload-url', {
           fileName: file.name,
+          targetFormat,
         });
-        const { uploadUrl } = uploadUrlResponse.data;
+        const { uploadUrl, jobId } = uploadUrlResponse.data;
 
         setConversionStatus((prev) => ({
           ...prev,
@@ -136,17 +136,11 @@ const App = () => {
           ...prev,
           [file.name]: 'Converting...',
         }));
-        const convertResponse = await axios.post('/api/convert', {
-          fileName: file.name,
-          sourceFormat,
-          targetFormat,
-        });
-        const { jobId } = convertResponse.data;
 
         let status = '';
         while (status !== 'completed' && status !== 'failed') {
           await new Promise((resolve) => setTimeout(resolve, 2000));
-          const statusResponse = await axios.get(`/api/status/${jobId}`);
+          const statusResponse = await axios.get(`/status/${jobId}`);
           status = statusResponse.data.status;
           setConversionStatus((prev) => ({
             ...prev,
@@ -156,7 +150,7 @@ const App = () => {
 
         if (status === 'completed') {
           const downloadUrlResponse = await axios.get(
-            `/api/download-url/${jobId}`
+            `/download-url/${jobId}`
           );
           setDownloadUrls((prev) => ({
             ...prev,
