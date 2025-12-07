@@ -5,15 +5,16 @@ codeuri = "/Users/william/git/step_to_stl/backend/api"
 runtime = "python3.12"
 architecture = "x86_64"
 handler = "app.handler"
+source_hash = "c10267e7c7b1af3e0197ea314647d53337ecb6524d6cf19afa45ff07e036a8eb"
 manifest_hash = "d65c6464f23014e122045fecea8fd91b"
 packagetype = "Zip"
 functions = ["ApiFunction"]
 
-[function_build_definitions.bec20501-22ca-4973-bd5f-d99001956b69]
+[function_build_definitions.3dd61e7b-cd53-4c3e-98f5-acd52261fefa]
 packagetype = "Image"
 functions = ["ConversionFunction"]
 
-[function_build_definitions.bec20501-22ca-4973-bd5f-d99001956b69.metadata]
+[function_build_definitions.3dd61e7b-cd53-4c3e-98f5-acd52261fefa.metadata]
 DockerTag = "python3.12-v1"
 DockerContext = "/Users/william/git/step_to_stl/backend/c3d"
 Dockerfile = "Dockerfile"

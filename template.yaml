@@ -180,7 +180,7 @@ Resources:
   ConversionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Description: 3D file conversion Lambda function v2
+      Description: 3D file conversion Lambda function v3
       PackageType: Image
       Timeout: 900
       MemorySize: 1024

@@ -104,7 +104,7 @@ const App = () => {
       return;
     }
 
-    for (const file of files) {
+    await Promise.all(files.map(async (file) => {
       setConversionStatus((prev) => ({
         ...prev,
         [file.name]: 'Preparing upload...',
@@ -173,7 +173,7 @@ const App = () => {
           [file.name]: 'Failed',
         }));
       }
-    }
+    }));
   };
 
   const isActiveStatus = (status: string | undefined) => {
