@@ -238,8 +238,8 @@ const App = () => {
                 transition={{ duration: 0.6 }}
               >
                 <HeroBadge>
-                  <span>Phase IV</span>
-                  Production-ready workspace
+                  <span>Live</span>
+                  Conversion workspace
                 </HeroBadge>
                 <HeroTitle>Launch-grade conversions without fuss.</HeroTitle>
                 <HeroDescription>
