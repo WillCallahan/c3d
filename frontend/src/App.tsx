@@ -16,6 +16,8 @@ import { lightTheme, darkTheme } from './theme';
 import { GlobalStyle } from './globalStyles';
 import { useDarkMode } from './useDarkMode';
 
+axios.defaults.baseURL = import.meta.env.VITE_API_ENDPOINT || '';
+
 type ChipTone = 'primary' | 'success' | 'danger' | 'warning' | 'muted';
 
 const formatOptions = ['stl', 'step', 'stp', 'obj', '3mf'];

@@ -112,12 +112,11 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      PackageType: Image
+      Runtime: python3.12
+      Handler: app.handler
+      CodeUri: backend/api/
       Timeout: 300
       MemorySize: 1024
-      ImageConfig:
-        Command:
-          - app.handler
       Policies:
         - Statement:
           - Effect: Allow
@@ -151,10 +150,6 @@ Resources:
           Properties:
             Path: /download-url/{job_id}
             Method: get
-    Metadata:
-      DockerTag: python3.12-v1
-      DockerContext: ./backend/c3d
-      Dockerfile: Dockerfile
 
   ConversionFunction:
     Type: AWS::Serverless::Function
