@@ -123,6 +123,9 @@ def convert(
         else:
             raise ValueError(f"Unsupported conversion from {input_ext} to {output_ext}")
 
+    if not os.path.exists(output_file):
+        raise FileNotFoundError(f"Conversion failed: output file not created at {output_file}")
+    
     print(f"Successfully converted {input_file} to {output_file}")
 
 
