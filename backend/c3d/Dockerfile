@@ -1,5 +1,6 @@
-# syntax=docker/dockerfile:1
-FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.12
+FROM public.ecr.aws/lambda/python:3.12
+
+RUN microdnf install -y mesa-libGL libXrender libXext libSM libICE && microdnf clean all
 
 COPY requirements.txt ${LAMBDA_TASK_ROOT}/
 RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
