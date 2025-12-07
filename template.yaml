@@ -162,6 +162,7 @@ Resources:
 
   ConversionFunction:
     Type: AWS::Serverless::Function
+    DependsOn: UploadsBucket
     Properties:
       CodeUri: backend/c3d/
       Handler: converter.handler
